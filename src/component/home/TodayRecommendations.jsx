@@ -33,7 +33,7 @@ export default function TodayRecommendations({ items = [], startDate = new Date(
 
             {/* 해당 날짜의 카드들 (없으면 비움) */}
             {col.items.map((v, i) => (
-              <CareCard key={`${col.key}-${i}`} title={v.title} meta={v.meta} emphasis={v.emphasis} />
+              <CareCard key={`${col.key}-${i}`} title={v.title} meta={v.meta?.slice(1) ?? []} emphasis={v.emphasis} />
             ))}
           </div>
         ))}
