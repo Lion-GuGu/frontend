@@ -30,13 +30,13 @@ export default function SchedulePanel({
 
   return (
     <section>
-      <SectionTitle>내 일정</SectionTitle>
+      <SectionTitle className="text-lg font-bold">내 일정</SectionTitle>
 
       {/* TodayRecommendations와 동일한 그리드 → 카드 폭 통일 */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {columns.map((col) => (
           <div key={col.key} className="space-y-4">
-            <div className="text-sm font-semibold text-gray-600">{col.label}</div>
+            <div className="text-md font-semibold text-gray-600">{col.label}</div>
 
             {col.items.map((v, i) => (
               <CareCard

@@ -23,13 +23,13 @@ export default function TodayRecommendations({ items = [], startDate = new Date(
 
   return (
     <section>
-      <SectionTitle>오늘의 추천 돌봄</SectionTitle>
+      <SectionTitle className="text-lg font-bold">오늘의 추천 돌봄</SectionTitle>
 
       {/* 열 그리드: 카드 폭 = 열 너비 (두 섹션 동일 폭을 위해 동일 그리드 사용) */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {columns.map((col) => (
           <div key={col.key} className="space-y-4">
-            <div className="text-sm font-semibold text-gray-600">{col.label}</div>
+            <div className="text-md font-semibold text-gray-600">{col.label}</div>
 
             {/* 해당 날짜의 카드들 (없으면 비움) */}
             {col.items.map((v, i) => (

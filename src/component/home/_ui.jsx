@@ -1,7 +1,7 @@
 // src/component/home/_ui.js
 
 export function SectionTitle({ children }) {
-  return <h2 className="text-[20px] md:text-[22px] font-semibold mb-4">{children}</h2>;
+  return <h2 className="mb-6 text-[22px] md:text-[26px] font-extrabold tracking-[-0.2px] text-[#111827]">{children}</h2>;
 }
 
 
