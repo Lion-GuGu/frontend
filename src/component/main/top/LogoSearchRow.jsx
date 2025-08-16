@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from 'react-router-dom'; // Link를 import 합니다.
 import logo from "../../../assets/logo.svg"; 
 import nameMark from "../../../assets/name.svg"; 
 
@@ -32,24 +33,24 @@ function IconButton({ ariaLabel, onClick, children, className = "" }) {
 
 export default function LogoSearchRow({
   onSearch = () => {},
-  notificationCount = 5, // 0이면 배지 숨김 (테스트를 위해 5로 설정)
+  notificationCount = 5,
+  onChangeTab, // 탭 상태 변경 함수를 prop으로 받습니다.
 }) {
   const [q, setQ] = useState("");
 
   return (
     <div className="w-full px-4 md:px-8 py-4 grid grid-cols-[auto_1fr_auto] items-center gap-6 bg-white">
-      {/* 로고 */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Link에 onClick 핸들러를 추가했습니다. */}
+      <Link to="/" className="flex items-center gap-2 shrink-0" onClick={() => onChangeTab?.("홈")}>
         <img src={logo} alt="품아이 로고" className="h-9 w-9 md:h-10 md:w-10" />
         <img src={nameMark} alt="품아이" className="h-8 md:h-9" />
-      </div>
+      </Link>
 
-      {/* 중앙 검색창 (최종 수정된 부분) */}
+      {/* 중앙 검색창 */}
       <form
         onSubmit={(e) => { e.preventDefault(); onSearch(q); }}
         className="justify-self-center w-full max-w-[640px]"
       >
-        {/* focus-within을 사용하여 내부 input에 포커스가 오면 이 div 전체에 스타일이 적용됩니다. */}
         <div
           className="flex w-full items-center h-11 rounded-xl border border-gray-300 bg-white transition-all focus-within:border-transparent focus-within:ring-2 focus-within:ring-[#FEAA45]"
         >
@@ -65,13 +66,11 @@ export default function LogoSearchRow({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="검색어를 입력하세요"
-              // 내부 input 자체의 모든 스타일을 제거하여 부모 스타일을 따르게 합니다.
               className="w-full h-full rounded-l-xl border-none bg-transparent pl-11 pr-3 text-black outline-none"
             />
           </div>
           <button
             type="submit"
-            // index.css의 전역 스타일을 덮어쓰기 위해 !important 옵션 사용
             className="h-full flex-shrink-0 !rounded-l-none !rounded-r-xl !border-none !px-5 !py-0 font-semibold text-white transition-none focus:outline-none"
             style={{ backgroundColor: "#FEAA45" }}
           >

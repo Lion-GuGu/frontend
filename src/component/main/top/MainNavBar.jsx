@@ -1,4 +1,6 @@
-// src/components/home/top/MainNavBar.jsx
+import React from 'react';
+import { Link } from 'react-router-dom'; // Link를 import 합니다.
+
 export default function MainNavBar({
   active = "홈",
   onChange,
@@ -6,47 +8,54 @@ export default function MainNavBar({
 }) {
   const tabs = ["홈", "캘린더", "커뮤니티", "스토어", "우편함"];
 
-  const handle = (t) => (e) => {
-    e.preventDefault();
-    if (t === "캘린더") onCalendarClick?.();
-    else onChange?.(t);
-  };
-
   return (
     <div className="w-full bg-neutral-800 text-white">
       <div className="w-full px-4 md:px-8 py-3 flex items-center justify-between">
         <ul className="flex gap-6 text-sm" role="tablist" aria-label="메인 내비게이션">
           {tabs.map((t) => {
             const isActive = active === t;
+            // 전역 스타일을 덮어쓰기 위해 !text-white를 사용합니다.
+            const className = "cursor-pointer select-none outline-none " +
+                            (isActive ? "!text-white font-semibold" : "!text-white opacity-60 hover:opacity-100");
+
             return (
               <li key={t}>
-                <span
-                  role="tab"
-                  aria-selected={isActive}
-                  tabIndex={0}
-                  onClick={handle(t)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") handle(t)(e);
-                  }}
-                  className={
-                    "cursor-pointer select-none outline-none " +
-                    (isActive ? "text-white font-semibold" : "opacity-60 hover:opacity-100")
-                  }
-                >
-                  {t}
-                </span>
+                {/* '홈' 탭일 경우 Link 컴포넌트를 사용합니다. */}
+                {t === "홈" ? (
+                  <Link to="/" className={className} onClick={() => onChange?.("홈")}>
+                    {t}
+                  </Link>
+                ) : (
+                  // 나머지 탭들은 기존 span과 onClick 핸들러를 유지합니다.
+                  <span
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (t === "캘린더") onCalendarClick?.();
+                      else onChange?.(t);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (t === "캘린더") onCalendarClick?.();
+                        else onChange?.(t);
+                      }
+                    }}
+                    className={className}
+                  >
+                    {t}
+                  </span>
+                )}
               </li>
             );
           })}
         </ul>
 
-        {/* ▶ 전화 아이콘 + 번호 (이모지 대신 SVG) */}
         <a
           href="tel:+82541234567"
-          className="flex items-center gap-2
-                    text-white visited:text-white hover:text-white
-                    decoration-white hover:underline
-                    focus:outline-none"
+          className="flex items-center gap-2 text-white visited:text-white hover:text-white decoration-white hover:underline focus:outline-none"
           aria-label="전화 걸기 (054) 123-4567"
         >
           <svg
@@ -63,7 +72,6 @@ export default function MainNavBar({
           </svg>
           <span className="text-white">(054) 123-4567</span>
         </a>
-
       </div>
     </div>
   );
