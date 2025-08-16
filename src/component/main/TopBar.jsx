@@ -1,4 +1,4 @@
-// src/components/home/TopBar.jsx
+import React from 'react';
 import LocationLoginBar from "./top/LocationLoginBar";
 import LogoSearchRow from "./top/LogoSearchRow";
 import MainNavBar from "./top/MainNavBar";
@@ -14,7 +14,11 @@ export default function TopBar({
   return (
     <header className="w-full border-b border-gray-200">
       <LocationLoginBar locationText={locationText} />
-      <LogoSearchRow onSearch={onSearch} cartTotal={cartTotal} />
+      <LogoSearchRow 
+        onSearch={onSearch} 
+        cartTotal={cartTotal} 
+        onChangeTab={onChangeTab} 
+      />
       <MainNavBar
         active={activeTab}
         onChange={onChangeTab}
