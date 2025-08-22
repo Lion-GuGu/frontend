@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import moment from "moment";
+import "moment/locale/ko"; // 🇰🇷 한국어 로케일 임포트
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "./scheduleMonth.module.css";
 import ScheduleModal from "../../component/cal/ScheduleModal";
+
+// moment 로케일 설정
+moment.locale("ko");
 
 const localizer = momentLocalizer(moment);
 
@@ -140,7 +144,10 @@ export default function ScheduleMonth() {
   const formats = useMemo(
     () => ({
       dayFormat: (date) => moment(date).format("D"),
-      weekdayFormat: (date) => moment(date).format("ddd"),
+      weekdayFormat: (date) =>
+        ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"][
+          date.getDay()
+        ],
     }),
     []
   );
