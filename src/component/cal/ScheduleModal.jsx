@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styles from "./scheduleModal.module.css";
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
   const [title, setTitle] = useState(event?.title || "");
@@ -69,7 +70,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
         </div>
 
         <div className={styles.body}>
-          {/* 제목 입력 */}
           <div className={styles.row}>
             <input
               type="text"
@@ -80,7 +80,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             />
           </div>
 
-          {/* 카테고리 버튼 */}
           <div className={styles.row}>
             <div className={styles.category}>
               {["긴급", "돌봄", "교육", "기타"].map((c) => (
@@ -88,7 +87,7 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
                   key={c}
                   type="button"
                   className={`${styles.categoryBtn} ${
-                    colorCategory === c ? styles[c] : ""
+                    colorCategory === c ? styles.active : ""
                   }`}
                   onClick={() => setColorCategory(c)}
                 >
@@ -98,7 +97,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             </div>
           </div>
 
-          {/* 날짜 & 시간 */}
           <div className={styles.row}>
             <div className={styles.iconWrapper}>
               <svg
@@ -115,7 +113,7 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             </div>
             <div className={styles.dateTime}>
               <div className={styles.dateDisplay}>
-                {format(slot.start, "MM월 dd일 (EEEE)")}
+                {format(slot.start, "MM월 dd일 (EEEE)", { locale: ko })}
               </div>
               <input
                 type="time"
@@ -131,7 +129,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             </div>
           </div>
 
-          {/* 장소 */}
           <div className={styles.row}>
             <div className={styles.iconWrapper}>
               <svg
@@ -155,7 +152,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             />
           </div>
 
-          {/* 환자 정보 */}
           <div className={styles.row}>
             <div className={styles.iconWrapper}>
               <svg
@@ -190,7 +186,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             </div>
           </div>
 
-          {/* 상세 설명 */}
           <div className={styles.row}>
             <div className={styles.iconWrapper}>
               <svg
@@ -206,7 +201,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
               </svg>
             </div>
             <div className={styles.descriptionSection}>
-              {/* 이미지에 보이는 아이콘과 동일한 기능은 아니지만, UI를 유사하게 만듭니다. */}
               <div className={styles.textEditorToolbar}>
                 <button className={styles.toolbarBtn}>
                   <b>B</b>
@@ -220,11 +214,9 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
                     viewBox="0 0 24 24"
                     width="16"
                     height="16"
+                    fill="currentColor"
                   >
-                    <path
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
-                      fill="currentColor"
-                    />
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
                   </svg>
                 </button>
                 <button className={styles.toolbarBtn}>T</button>
@@ -234,11 +226,9 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
                     viewBox="0 0 24 24"
                     width="16"
                     height="16"
+                    fill="currentColor"
                   >
-                    <path
-                      d="M4 15.5h16v-2H4v2zm0-5h16v-2H4v2zm0-5h16V3H4v2z"
-                      fill="currentColor"
-                    />
+                    <path d="M4 15.5h16v-2H4v2zm0-5h16v-2H4v2zm0-5h16V3H4v2z" />
                   </svg>
                 </button>
                 <button className={styles.toolbarBtn}>
@@ -247,11 +237,9 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
                     viewBox="0 0 24 24"
                     width="16"
                     height="16"
+                    fill="currentColor"
                   >
-                    <path
-                      d="M4 15.5h16v-2H4v2zm0-5h16v-2H4v2zM4 5v2h16V5H4z"
-                      fill="currentColor"
-                    />
+                    <path d="M4 15.5h16v-2H4v2zm0-5h16v-2H4v2zM4 5v2h16V5H4z" />
                   </svg>
                 </button>
               </div>
@@ -264,7 +252,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
             </div>
           </div>
 
-          {/* 태그 입력 */}
           <div className={styles.row}>
             <div className={styles.iconWrapper}>
               <svg
@@ -305,7 +292,6 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
           </div>
         </div>
 
-        {/* 푸터 버튼 */}
         <div className={styles.footer}>
           {event && (
             <button className={styles.deleteBtn} onClick={handleDelete}>
