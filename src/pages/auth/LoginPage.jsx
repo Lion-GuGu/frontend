@@ -32,7 +32,8 @@ const LoginSection = () => {
 
     return (
         <main className="flex-grow">
-            <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* max-w-9xl을 max-w-7xl로 수정하여 레이아웃을 통일했습니다. */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Breadcrumb paths={loginPaths} />
                 <div className="mt-8">
                     <AuthForm
