@@ -1,19 +1,35 @@
 // src/component/home/_ui.js
 
 export function SectionTitle({ children }) {
-  return <h2 className="mb-6 text-[22px] md:text-[26px] font-extrabold tracking-[-0.2px] text-[#111827]">{children}</h2>;
+  return (
+    <h2 className="mb-6 text-[22px] md:text-[26px] font-extrabold tracking-[-0.2px] text-[#111827]">
+      {children}
+    </h2>
+  );
 }
 
-
-export function CareCard({ title, meta = [], badge, emphasis = false, className = "" }) {
+export function CareCard({
+  title,
+  meta = [],
+  badge,
+  emphasis = false,
+  className = "",
+}) {
   const { place, time, child, tags } = parseMeta(meta);
 
   // 뱃지 표기: prop 우선, 없으면 제목 안의 '요청/제공'으로 자동 추론
-  const norm = (v) => (v === "요청" || v === "request" ? "request"
-                   : v === "제공" || v === "provide" ? "provide"
-                   : null);
-  const auto = title.includes("요청") ? "request" : title.includes("제공") ? "provide" : null;
-  const kind = norm(badge) ?? auto;              // null이면 뱃지 없음
+  const norm = (v) =>
+    v === "요청" || v === "request"
+      ? "request"
+      : v === "제공" || v === "provide"
+      ? "provide"
+      : null;
+  const auto = title.includes("요청")
+    ? "request"
+    : title.includes("제공")
+    ? "provide"
+    : null;
+  const kind = norm(badge) ?? auto; // null이면 뱃지 없음
   const label = kind === "request" ? "요청" : kind === "provide" ? "제공" : "";
   const badgeCls =
     kind === "request"
@@ -89,10 +105,22 @@ function parseMeta(meta = []) {
   for (const raw of meta) {
     const s = String(raw || "").trim();
     if (!s) continue;
-    if (s.startsWith("#")) { out.tags.push(s); continue; }
-    if (s.startsWith("장소:")) { out.place = s.replace(/^장소:\s*/, ""); continue; }
-    if (s.startsWith("시간:")) { out.time  = s.replace(/^시간:\s*/, ""); continue; }
-    if (s.startsWith("아이:")) { out.child = s.replace(/^아이:\s*/, ""); continue; }
+    if (s.startsWith("#")) {
+      out.tags.push(s);
+      continue;
+    }
+    if (s.startsWith("장소:")) {
+      out.place = s.replace(/^장소:\s*/, "");
+      continue;
+    }
+    if (s.startsWith("시간:")) {
+      out.time = s.replace(/^시간:\s*/, "");
+      continue;
+    }
+    if (s.startsWith("아이:")) {
+      out.child = s.replace(/^아이:\s*/, "");
+      continue;
+    }
   }
   return out;
 }
