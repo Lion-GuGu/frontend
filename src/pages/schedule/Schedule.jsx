@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import moment from "moment";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -110,7 +110,6 @@ export default function Schedule() {
   const [modalOpen, setModalOpen] = useState(false);
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-
   // 현재 주일 때만 빨간선 표시
   const isThisWeek = useMemo(() => moment(date).isSame(moment(), "week"), [date]);
 
@@ -130,7 +129,6 @@ export default function Schedule() {
   const dragStateRef = useRef({ startY: 0, startThumbTop: 0, maxThumbTop: 0, maxScroll: 0 });
 
   // 네이티브 스크롤 감춤 + 헤더 박스 제거용 스타일 주입
-  // (한 번만)
   useEffect(() => {
     // no-op: style 태그는 JSX 아래에 렌더
   }, []);
@@ -153,7 +151,6 @@ export default function Schedule() {
     if (!grid) return;
     const client = grid.clientHeight;
     const scrollH = grid.scrollHeight;
-    // 스크롤 필요 없으면 숨김
     if (scrollH <= client + 1) {
       setSbVisible(false);
       setThumbTop(0);
@@ -206,7 +203,7 @@ export default function Schedule() {
     const nextThumb = Math.min(Math.max(0, startThumbTop + dy), maxThumbTop);
     setThumbTop(nextThumb);
     const pct = nextThumb / maxThumbTop;
-    grid.scrollTop = pct * maxScroll; // 스크롤 이동(스크롤 이벤트로 동기화)
+    grid.scrollTop = pct * maxScroll;
     pingShow(1200);
   };
 
@@ -216,7 +213,6 @@ export default function Schedule() {
     document.removeEventListener("mouseup", onDocMouseUp);
   };
 
-  // 레이아웃/스크롤 이벤트 바인딩
   useEffect(() => {
     const holder = holderRef.current;
     const grid = holder?.querySelector(".rbc-time-content");
@@ -271,7 +267,6 @@ export default function Schedule() {
     const gridRect = grid.getBoundingClientRect();
     const gutterRect = gutter.getBoundingClientRect();
 
-    // 기본 인디케이터의 계산된 top 값 사용
     const indicator =
       grid.querySelector(".rbc-current-time-indicator") ||
       holder.querySelector(".rbc-current-time-indicator");
@@ -294,7 +289,6 @@ export default function Schedule() {
       return;
     }
 
-    // 백업 계산
     const firstGroup =
       gutter.querySelector(".rbc-timeslot-group") ||
       grid.querySelector(".rbc-timeslot-group");
@@ -337,6 +331,7 @@ export default function Schedule() {
       grid?.removeEventListener("scroll", onScroll);
     };
   }, [date]);
+
 
   // 일정 CRUD
   const onSelectSlot = (slot) => {
@@ -411,12 +406,16 @@ export default function Schedule() {
           </button>
         </div>
 
+        </div>
+
         <MiniMonth value={date} onChange={setDate} />
 
         {/* 단지 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
             <img className={styles.cal} src={dateSvg} alt="" />
+          </div>
+
             <div className={styles.sectionTitle}>단지 일정</div>
           </div>
           <label className={styles.calItem}>
@@ -441,6 +440,8 @@ export default function Schedule() {
         <div className={styles.calendarList}>
           <div className={styles.header}>
             <img className={styles.cal} src={dateSvg} alt="" />
+          </div>
+
             <div className={styles.sectionTitle}>내 일정</div>
           </div>
           <label className={styles.calItem}>
