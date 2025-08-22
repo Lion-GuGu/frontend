@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import moment from "moment";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -82,31 +82,6 @@ export default function Schedule() {
   const [modalOpen, setModalOpen] = useState(false);
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const timeContentRef = useRef(null);
-  const [currentTop, setCurrentTop] = useState(0);
-
-  // 현재 시간 라인 계산
-  const recalcNowLine = () => {
-    const holder = timeContentRef.current;
-    if (!holder) return;
-    const grid = holder.querySelector(".rbc-time-content");
-    if (!grid) return;
-    const gridRect = grid.getBoundingClientRect();
-    const slotHeight = gridRect.height / 24;
-    const now = new Date();
-    const topPx = slotHeight * (now.getHours() + now.getMinutes() / 60);
-    setCurrentTop(topPx);
-  };
-
-  useEffect(() => {
-    recalcNowLine();
-    const timer = setInterval(recalcNowLine, 60000);
-    window.addEventListener("resize", recalcNowLine);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("resize", recalcNowLine);
-    };
-  }, []);
 
   // 일정 추가
   const onSelectSlot = (slot) => {
@@ -174,13 +149,13 @@ export default function Schedule() {
   return (
     <div className={styles.pageWrap}>
       <aside className={styles.sidebar}>
-        <div className={styles.header}>
+        <div className={styles.box}>
           <img className={styles.logo} src="logo.svg" alt="로고" />
           <img className={styles.font} src="font.svg" alt="품아이" />
         </div>
         <MiniMonth value={date} onChange={setDate} />
         <div className={styles.calendarList}>
-          <div className={styles.header}>
+          <div className={styles.box}>
             <img className={styles.cal} src="cal.svg" alt="" />
             <div className={styles.sectionTitle}>단지 일정</div>
           </div>
@@ -202,7 +177,7 @@ export default function Schedule() {
           </label>
         </div>
         <div className={styles.calendarList}>
-          <div className={styles.header}>
+          <div className={styles.box}>
             <img className={styles.cal} src="cal.svg" alt="" />
             <div className={styles.sectionTitle}>내 일정</div>
           </div>
@@ -213,7 +188,7 @@ export default function Schedule() {
         </div>
       </aside>
 
-      <main className={styles.main} ref={timeContentRef}>
+      <main className={styles.main}>
         <div className={styles.topBar}>
           <div className={styles.leftControls}>
             <button
