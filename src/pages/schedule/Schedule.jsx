@@ -1,18 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react"; // useRef, useEffect 추가
 import moment from "moment";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "./schedule.module.css";
 import ScheduleModal from "../../component/cal/ScheduleModal";
 
-// 자산
-import logoSvg from "../../assets/logo.svg";
-import nameSvg from "../../assets/name.svg";
-import dateSvg from "../../assets/date.svg";
-
 const localizer = momentLocalizer(moment);
 
-/* =====  A. 시스템 스크롤바 숨김 + RBC 헤더 우측 여백 제거(상자 방지)  ===== */
+/* =====  A. 시스템 스크롤바 숨김 + RBC 헤더 우측 여백 제거(상자 방지)   ===== */
 const OVERLAY_SCROLLBAR_CSS = `
   /* 본문 스크롤 컨테이너의 네이티브 스크롤바 숨김 */
   .${styles.calendarHolder} .rbc-time-content {
@@ -30,11 +25,6 @@ const OVERLAY_SCROLLBAR_CSS = `
   }
 `;
 
-/* 상단 날짜 헤더: 링크/밑줄 제거 */
-const WeekDateHeader = ({ label }) => (
-  <span style={{ textDecoration: "none", color: "inherit" }}>{label}</span>
-);
-
 // 주간 범위 문자열 포맷
 function formatWeekRange(date) {
   const start = moment(date).startOf("week");
@@ -42,7 +32,7 @@ function formatWeekRange(date) {
   return `${start.format("YYYY M월 D일")} - ${end.format("D일")}`;
 }
 
-// 좌측 미니 달력
+// 좌측 미니 먼슬리
 function MiniMonth({ value, onChange }) {
   const m = moment(value);
   const start = moment(m).startOf("month").startOf("week");
@@ -116,7 +106,6 @@ export default function Schedule() {
   const holderRef = useRef(null);
   const [nowTop, setNowTop] = useState(null);
   const [nowLeft, setNowLeft] = useState(null);
-  // ✅ 너비를 저장할 상태 추가
   const [nowWidth, setNowWidth] = useState(null);
 
   // ===== B. 커스텀 오버레이 스크롤바 상태 =====
@@ -273,7 +262,6 @@ export default function Schedule() {
       const topInGrid = parseFloat(style.top) || 0;
       const top = (gridRect.top - holderRect.top) + (topInGrid - grid.scrollTop);
       const left = gutterRect.right - holderRect.left;
-      // ✅ 스크롤 가능한 컨텐츠 영역의 너비를 가져옵니다.
       const width = grid.clientWidth;
 
       const gridTop = gridRect.top - holderRect.top;
@@ -342,20 +330,24 @@ export default function Schedule() {
     setSelectedEvent(null);
     setModalOpen(true);
   };
+
   const onSelectEvent = (event) => {
     setSelectedEvent(event);
     setSlotForModal({ start: event.start, end: event.end });
     setModalOpen(true);
   };
+
   const onAddEvent = (form) => {
     const saved = { ...form, id: Date.now() };
     setEvents((prev) => [...prev, saved]);
     setModalOpen(false);
   };
+
   const onUpdateEvent = (form) => {
     setEvents((prev) => prev.map((e) => (e.id === form.id ? form : e)));
     setModalOpen(false);
   };
+
   const onDeleteEvent = (id) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
     setModalOpen(false);
@@ -378,40 +370,32 @@ export default function Schedule() {
   const components = useMemo(
     () => ({
       toolbar: () => null,
-      week: { dateHeader: WeekDateHeader },
     }),
     []
   );
 
   const formats = useMemo(
     () => ({
-      timeGutterFormat: (d) => moment(d).format("HH:mm"),
-      dayFormat: (d) => moment(d).format("D일"),
+      timeGutterFormat: (date) => moment(date).format("HH:mm"),
+      dayFormat: (date) => moment(date).format("D일"),
     }),
     []
   );
-
-  const goHome = () => {
-    window.location.href = "/";
-  };
 
   return (
     <div className={styles.pageWrap}>
       <style>{OVERLAY_SCROLLBAR_CSS}</style>
 
       <aside className={styles.sidebar}>
-        <div className={styles.header}>
-          <button className={styles.brandBtn} onClick={goHome} aria-label="메인으로 이동">
-            <img className={styles.logo} src={logoSvg} alt="로고" />
-            <img className={styles.font} src={nameSvg} alt="품아이" />
-          </button>
+        <div className={styles.box}>
+          <img className={styles.logo} src="logo.svg" alt="로고" />
+          <img className={styles.font} src="font.svg" alt="품아이" />
         </div>
-
         <MiniMonth value={date} onChange={setDate} />
 
         <div className={styles.calendarList}>
-          <div className={styles.header}>
-            <img className={styles.cal} src={dateSvg} alt="" />
+          <div className={styles.box}>
+            <img className={styles.cal} src="cal.svg" alt="" />
             <div className={styles.sectionTitle}>단지 일정</div>
           </div>
           <label className={styles.calItem}>
@@ -433,13 +417,13 @@ export default function Schedule() {
         </div>
 
         <div className={styles.calendarList}>
-          <div className={styles.header}>
-            <img className={styles.cal} src={dateSvg} alt="" />
+          <div className={styles.box}>
+            <img className={styles.cal} src="cal.svg" alt="" />
             <div className={styles.sectionTitle}>내 일정</div>
           </div>
           <label className={styles.calItem}>
-            <span className={styles.dot} style={{ background: "#ED8611" }} />
-            내 일정
+            <span className={styles.dot} style={{ background: "#ED8611" }} />내
+            일정
           </label>
         </div>
       </aside>
@@ -447,7 +431,10 @@ export default function Schedule() {
       <main className={styles.main}>
         <div className={styles.topBar}>
           <div className={styles.leftControls}>
-            <button className={styles.topBtn} onClick={() => setDate(new Date())}>
+            <button
+              className={styles.topBtn}
+              onClick={() => setDate(new Date())}
+            >
               오늘
             </button>
             <div className={styles.titleMonth}>{formatWeekRange(date)}</div>
@@ -458,7 +445,6 @@ export default function Schedule() {
         </div>
 
         <div className={styles.calendarHolder} ref={holderRef}>
-          {/* ✅ style에 width를 추가합니다. */}
           {isThisWeek && nowTop != null && nowLeft != null && (
             <div className={styles.nowLine} style={{ top: nowTop, left: nowLeft, width: nowWidth }}>
               <span className={styles.nowDot} />
@@ -482,7 +468,6 @@ export default function Schedule() {
             components={components}
             eventPropGetter={eventPropGetter}
             formats={formats}
-            drilldownView={null}
           />
 
           <div

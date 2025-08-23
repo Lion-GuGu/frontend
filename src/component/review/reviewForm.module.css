@@ -1,0 +1,58 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 350px;
+  height: 350px;
+  margin: 0 auto;
+  font-family: sans-serif;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  font-size: 32px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star.active {
+  color: #ffd700; /* 노란 별 */
+}
+
+.textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: none;
+  font-size: 14px;
+}
+
+.button {
+  width: 100%;
+  padding: 12px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
