@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api, { setToken } from '../../lib/api'; // ✅ 변경
+import { useNavigate } from 'react-router-dom'; // useNavigate를 import합니다.
+import api, { setToken } from '../../lib/api';
 import Breadcrumb from '../../component/auth/Breadcrumb';
 import AuthForm from '../../component/auth/AuthForm';
 import TopBar from '../../component/main/TopBar';
@@ -8,6 +8,8 @@ import BottomFooter from '../../component/main/BottomFooter';
 
 // 페이지의 메인 컨텐츠
 const LoginSection = () => {
+  const navigate = useNavigate(); // 1. useNavigate 훅을 사용합니다.
+
   const loginPaths = [
     { name: '계정', href: '/account' },
     { name: '로그인', href: '/login' }
@@ -29,7 +31,6 @@ const LoginSection = () => {
     </div>
   );
 
-  // ✅ API 연동
   const handleLogin = async (data) => {
     try {
       const remember = document.getElementById('remember-me')?.checked ?? false;
@@ -39,13 +40,16 @@ const LoginSection = () => {
         password: data.password
       });
 
-      // 서버가 { access_token: "..."} 형태로 준다고 가정
-      setToken(res.access_token, remember); // ✅ 저장 + axios 헤더 세팅
+      setToken(res.access_token, remember);
 
       alert("로그인 성공!");
-      // 원하면 홈/이전페이지로 이동
-      const back = sessionStorage.getItem('postLoginRedirect');
-      window.location.href = back || '/';
+
+      // 2. sessionStorage에 저장된 리디렉션 경로를 지웁니다.
+      sessionStorage.removeItem('postLoginRedirect');
+
+      // 3. 항상 메인 페이지('/')로 이동시킵니다.
+      navigate('/');
+
     } catch (error) {
       console.error("로그인 실패:", error);
       alert("로그인 실패. 아이디/비밀번호를 확인하세요.");

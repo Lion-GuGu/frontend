@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Link } from 'react-router-dom';
+// src/component/main/logo/LogoSearchRow.jsx
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import nameMark from "../../../assets/name.svg";
-import SupportNotification from "../../supportNotification/SupportNotification"; 
+import SupportNotification from "../../supportNotification/SupportNotification";
+import api, { getToken } from "../../../lib/api";
 
 function IconButton({ ariaLabel, onClick, children, className = "" }) {
   return (
@@ -11,18 +13,9 @@ function IconButton({ ariaLabel, onClick, children, className = "" }) {
       aria-label={ariaLabel}
       onClick={onClick}
       className={`
-        !p-0 
-        !border-none 
-        !bg-transparent 
-        !rounded-full
-        cursor-pointer 
-        inline-flex 
-        items-center 
-        justify-center 
-        select-none 
-        focus:!outline-none
-        hover:opacity-80
-        transition-opacity
+        !p-0 !border-none !bg-transparent !rounded-full
+        cursor-pointer inline-flex items-center justify-center
+        select-none focus:!outline-none hover:opacity-80 transition-opacity
         ${className}
       `}
     >
@@ -37,7 +30,50 @@ export default function LogoSearchRow({
   onChangeTab,
 }) {
   const [q, setQ] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false); // ✅ 알림창 토글 상태
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // ✅ 포인트 잔액 상태
+  const [pointBalance, setPointBalance] = useState(null);
+  const [loadingPoint, setLoadingPoint] = useState(true);
+
+  // ✅ 포인트 잔액 조회
+  useEffect(() => {
+    let alive = true;
+
+    const fetchPoints = async () => {
+      const t = getToken();
+      if (!t) {
+        if (alive) {
+          setPointBalance(null);
+          setLoadingPoint(false);
+        }
+        return;
+      }
+      try {
+        setLoadingPoint(true);
+        const { data } = await api.get("/api/points/me");
+        const bal = data?.balance ?? data?.point ?? data?.points ?? 0; // 명세: { balance: number }
+        if (alive) setPointBalance(bal);
+      } catch (e) {
+        console.error("포인트 잔액 조회 실패:", e);
+        if (alive) setPointBalance(null);
+      } finally {
+        if (alive) setLoadingPoint(false);
+      }
+    };
+
+    fetchPoints();
+
+    // 탭 복귀/뒤로가기로 돌아왔을 때도 갱신
+    const onShow = () => fetchPoints();
+    window.addEventListener("pageshow", onShow);
+    document.addEventListener("visibilitychange", onShow);
+    return () => {
+      alive = false;
+      window.removeEventListener("pageshow", onShow);
+      document.removeEventListener("visibilitychange", onShow);
+    };
+  }, []);
 
   return (
     <div className="relative w-full px-4 md:px-8 py-4 grid grid-cols-[auto_1fr_auto] items-center gap-6 bg-white">
@@ -88,12 +124,12 @@ export default function LogoSearchRow({
         </div>
       </form>
 
-      {/* 우측 알림 */}
+      {/* 우측 알림 + 온정 */}
       <div className="justify-self-end flex items-center gap-2.5 shrink-0 relative">
         <IconButton
           ariaLabel="알림 확인"
           className="relative"
-          onClick={() => setShowNotifications((prev) => !prev)} // ✅ 토글
+          onClick={() => setShowNotifications((prev) => !prev)}
         >
           <svg
             className="h-7 w-7 text-gray-700"
@@ -114,14 +150,24 @@ export default function LogoSearchRow({
           )}
         </IconButton>
 
-        <div className="flex flex-col text-xs leading-tight text-left">
+        {/* ✅ 포인트 잔액 표시부 → 클릭 시 /points 이동 */}
+        <Link
+          to="/points"
+          className="flex flex-col text-xs leading-tight text-left group cursor-pointer select-none"
+          aria-label="포인트 내역 보기"
+          title="포인트 내역 보기"
+        >
           <span className="text-gray-500">이웃과 나눌 시간</span>
-          <span className="font-semibold text-black">15 온정</span>
-        </div>
+          <span className="font-semibold text-black group-hover:underline">
+            {loadingPoint
+              ? "—"
+              : `${Number(pointBalance ?? 0).toLocaleString("ko-KR")} 온정`}
+          </span>
+        </Link>
 
-        {/* ✅ 알림창 */}
+        {/* 알림창 */}
         {showNotifications && (
-          <div className="absolute top-10 right-0 w-80 p-0 z-50"> 
+          <div className="absolute top-10 right-0 w-80 p-0 z-50">
             <SupportNotification
               nickname="홍길동"
               onReject={() => alert("거절")}

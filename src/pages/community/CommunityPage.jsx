@@ -23,9 +23,37 @@ function extractAuthorId(p) {
   );
 }
 
+// id 정규화
+function getPostId(p) {
+  return p.id ?? p.postId ?? p.postID ?? p.boardId ?? null;
+}
+
+// 목록/상세 둘 다 대응하는 조회수 추출
+function extractViewCount(p) {
+  return (
+    p.viewCount ??
+    p.views ??
+    p.view_count ??
+    p.hit ??
+    p.readCount ??
+    null
+  );
+}
+function extractCommentCount(p) {
+  return (
+    p.commentCount ??
+    p.commentsCount ??
+    p.replyCount ??
+    p.repliesCount ??
+    p.comment_count ??
+    0
+  );
+}
+
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
-  const [userMap, setUserMap] = useState({}); // { [id]: {id, username, name, ...} }
+  const [userMap, setUserMap] = useState({});   // { [userId]: user }
+  const [viewMap, setViewMap] = useState({});   // { [postId]: viewCount }  ← 상세에서 저장한 값 merge
   const [loading, setLoading] = useState(true);
   const [needLogin, setNeedLogin] = useState(false);
   const [categoryKor, setCategoryKor] = useState('전체');
@@ -57,7 +85,10 @@ export default function CommunityPage() {
         const items = Array.isArray(data)
           ? data
           : (data?.content ?? data?.items ?? data?.posts ?? []);
-        if (alive) setPosts(items || []);
+        if (alive) {
+          setPosts(items || []);
+          setViewMap({}); // 카테고리/페이지 바뀌면 조회수 캐시 리셋
+        }
       } catch (err) {
         if (err?.response?.status === 401 || err?.response?.status === 403) {
           setNeedLogin(true);
@@ -80,7 +111,6 @@ export default function CommunityPage() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      // 목록에서 ID만 뽑고, 이미 가진 건 제외
       const ids = Array.from(
         new Set(posts.map(extractAuthorId).filter((v) => v !== null && v !== undefined))
       );
@@ -88,14 +118,13 @@ export default function CommunityPage() {
       if (missing.length === 0) return;
 
       try {
-        // 개별 조회 (배치 API 없으니 /api/auth/users/{id} 병렬)
         const results = await Promise.allSettled(
           missing.map((id) => api.get(`/api/auth/users/${id}`))
         );
         if (!alive) return;
 
         const next = { ...userMap };
-        results.forEach((r, idx) => {
+        results.forEach((r) => {
           if (r.status === 'fulfilled') {
             const u = r.value.data;
             if (u?.id != null) next[String(u.id)] = u;
@@ -106,10 +135,68 @@ export default function CommunityPage() {
         console.error('작성자 정보 조회 실패:', e);
       }
     })();
-    return () => {
-      alive = false;
+    return () => { alive = false; };
+  }, [posts, userMap]);
+
+  // 3) ✅ 상세에서 세션에 저장한 조회수 값을 합치기 (목록에서는 상세 API 호출 안 함)
+  useEffect(() => {
+    const applyFromSession = () => {
+      const idsInList = new Set(
+        posts.map(getPostId).filter((id) => id != null).map(String)
+      );
+
+      let changed = false;
+      const next = { ...viewMap };
+
+      // sessionStorage의 viewCount_* 를 읽어 병합
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (!key || !key.startsWith('viewCount_')) continue;
+        const id = key.slice('viewCount_'.length);
+        if (!idsInList.has(id)) continue; // 현재 목록에 없는 건 무시
+
+        const val = Number(sessionStorage.getItem(key));
+        if (Number.isFinite(val) && next[id] !== val) {
+          next[id] = val;
+          changed = true;
+        }
+      }
+
+      // 적용된 키는 정리
+      Array.from(idsInList).forEach((id) => {
+        const k = `viewCount_${id}`;
+        if (sessionStorage.getItem(k) != null) sessionStorage.removeItem(k);
+      });
+
+      if (changed) setViewMap(next);
     };
-  }, [posts]); // posts가 바뀔 때만 시도
+
+    applyFromSession();
+
+    const onShow = () => applyFromSession();
+    window.addEventListener('pageshow', onShow);
+    document.addEventListener('visibilitychange', onShow);
+    return () => {
+      window.removeEventListener('pageshow', onShow);
+      document.removeEventListener('visibilitychange', onShow);
+    };
+  }, [posts, viewMap]);
+
+  // 4) 목록용 정규화(조회수/댓글수 포함)
+  const normalizedPosts = useMemo(
+    () =>
+      posts.map((p) => {
+        const id = getPostId(p);
+        const vcFromList = extractViewCount(p);
+        const mergedVC = vcFromList != null ? vcFromList : (id != null ? viewMap[id] ?? 0 : 0);
+        return {
+          ...p,
+          viewCount: mergedVC,
+          commentCount: extractCommentCount(p),
+        };
+      }),
+    [posts, viewMap]
+  );
 
   if (loading) return <div className="p-10">게시글 불러오는 중...</div>;
 
@@ -125,7 +212,7 @@ export default function CommunityPage() {
         />
 
         <PostTable
-          posts={posts}
+          posts={normalizedPosts}
           userMap={userMap}
           emptyMessage={needLogin ? '로그인 후 확인 가능합니다.' : '게시글이 없습니다.'}
         />

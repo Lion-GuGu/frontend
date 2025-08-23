@@ -10,19 +10,18 @@ const CATEGORY_LABEL = {
   MARKET: '거래',
 };
 
-function colorFromString(str = '') {
-  const palette = [
-    'bg-gray-200 text-gray-800',
-    'bg-blue-100 text-blue-800',
-    'bg-green-100 text-green-800',
-    'bg-amber-100 text-amber-800',
-    'bg-purple-100 text-purple-800',
-    'bg-pink-100 text-pink-800',
-  ];
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-  return palette[Math.abs(h) % palette.length];
-}
+// ▼▼▼ 1. 이 함수를 HEX 색상 코드를 반환하도록 수정합니다. ▼▼▼
+const getAuthorStyle = (user) => {
+  // user 객체에 'points' 필드가 있다고 가정합니다.
+  if (!user || user.points == null) {
+    return { backgroundColor: '#E5E7EB', color: '#374151' }; // 기본 스타일
+  }
+  if (user.points >= 50) {
+    return { backgroundColor: '#FFED9E', color: '#DB6E00' }; // 50점 이상
+  } else {
+    return { backgroundColor: '#9EFFB3', color: '#00A81C' }; // 50점 미만
+  }
+};
 
 const fmtDate = (d) => {
   if (!d) return '-';
@@ -73,28 +72,39 @@ function extractAuthorNameFromPost(p) {
 }
 
 function viewsOf(p) {
-  return p.views ?? p.viewCount ?? p.hit ?? 0;
+  const raw =
+    p.viewCount ??
+    p.views ??
+    p.view_count ??
+    p.hit ??
+    p.readCount ??
+    0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
 }
+
+const nfmt = new Intl.NumberFormat('ko-KR');
 
 export default function PostTable({ posts = [], userMap = {}, emptyMessage = '게시글이 없습니다.' }) {
   const rows = posts.map((p) => {
     const nameFromPost = extractAuthorNameFromPost(p);
-    const id = extractAuthorId(p);
-    const user = id != null ? userMap[String(id)] : undefined;
-    const name =
-      nameFromPost ||
-      user?.name ||
-      user?.username ||
-      '익명';
+    const id = p.id ?? p.postId ?? p.postID ?? p.boardId;
+    const userId = extractAuthorId(p);
+    const user = userId != null ? userMap[String(userId)] : undefined;
+    const name = nameFromPost || user?.name || user?.username || '익명';
+
+    const v = viewsOf(p);
 
     return {
-      id: p.id ?? p.postId,
+      id,
       category: CATEGORY_LABEL[p.category] || p.category || '-',
       title: p.title ?? '(제목 없음)',
       author: name,
-      authorClass: colorFromString(name),
+      // ▼▼▼ 2. user 객체를 직접 넘겨주도록 변경합니다. ▼▼▼
+      authorUserObject: user,
       date: fmtDate(p.createdAt || p.created_at || p.date),
-      views: viewsOf(p),
+      views: v,
+      viewsText: nfmt.format(v),
     };
   });
 
@@ -136,12 +146,16 @@ export default function PostTable({ posts = [], userMap = {}, emptyMessage = '�
                   </div>
                 </td>
                 <td className="py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${post.authorClass}`}>
+                  {/* ▼▼▼ 3. className 대신 style을 사용하고 함수를 직접 호출합니다. ▼▼▼ */}
+                  <span
+                    className="px-2 py-1 rounded-full text-xs font-medium"
+                    style={getAuthorStyle(post.authorUserObject)}
+                  >
                     {post.author}
                   </span>
                 </td>
                 <td className="py-4 text-gray-500">{post.date}</td>
-                <td className="py-4 text-gray-500">{post.views}</td>
+                <td className="py-4 text-gray-500 tabular-nums">{post.viewsText}</td>
               </tr>
             ))}
           </tbody>

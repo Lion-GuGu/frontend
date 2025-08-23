@@ -1,97 +1,116 @@
-// src/pages/community/CreatePostPage.jsx
-import React, { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/community/EditPostPage.jsx
+import React, { useCallback, useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import TopBar from '../../component/main/TopBar';
 import BottomFooter from '../../component/main/BottomFooter';
 import api from '../../lib/api';
 
-// 한글 라벨 ↔︎ 서버 enum 매핑
-const KOR2ENUM = {
-  '질문': 'QUESTION',
-  '자유': 'FREE',
-  '중고나눔': 'MARKET',
+// 서버 enum -> 한글 라벨
+const ENUM2KOR = {
+  QUESTION: '질문',
+  FREE: '자유',
+  TIP: '팁',
+  NOTICE: '공지',
+  MARKET: '중고나눔',
 };
-const CATEGORY_OPTIONS = Object.keys(KOR2ENUM); // ['질문','자유','중고나눔']
 
-function CreatePostSection() {
-  const [categoryKor, setCategoryKor] = useState(''); // 사용자가 고르는 한글 라벨
+function EditPostSection() {
+  const { postId } = useParams();
+  const navigate = useNavigate();
+
+  const [categoryKor, setCategoryKor] = useState(''); // 표시용(수정 불가)
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  // 1) 기존 게시글 가져오기
+  useEffect(() => {
+    const fetchPostData = async () => {
+      try {
+        const { data } = await api.get(`/api/community/posts/${postId}`);
+        setTitle(data.title ?? '');
+        setContent(data.content ?? '');
+        setCategoryKor(ENUM2KOR[data.category] || data.category || '자유'); // 표시만
+        setLoading(false);
+      } catch (err) {
+        console.error('게시글 정보 불러오기 실패:', err);
+        alert('게시글 정보를 불러올 수 없습니다.');
+        navigate(`/community/${postId}`);
+      }
+    };
+    fetchPostData();
+  }, [postId, navigate]);
 
   const validate = () => {
-    if (!categoryKor) return alert('카테고리를 선택해 주세요.'), false;
     if (!title.trim()) return alert('제목을 입력해 주세요.'), false;
     if (!content.trim()) return alert('내용을 입력해 주세요.'), false;
     return true;
   };
 
-  const submitPost = async () => {
+  // 2) 수정 저장 (명세서: PATCH 바디는 title, content만)
+  const submitEdit = async () => {
     if (!validate() || submitting) return;
     setSubmitting(true);
     try {
-      const payload = {
+      await api.patch(`/api/community/posts/${postId}`, {
         title: title.trim(),
         content: content.trim(),
-        category: KOR2ENUM[categoryKor], // ← 서버 enum으로 전송
-      };
-      const { data } = await api.post('/api/community/posts', payload);
-
-      // 응답 예시: { "postId": 1 } (명세서 기준), 혹은 { "id": 1 }
-      const id = data?.postId ?? data?.id;
-      alert('게시글이 등록되었습니다.');
-      if (id) navigate(`/community/${id}`, { replace: true });
-      else navigate('/', { state: { tab: '커뮤니티' }, replace: true });
+      }); // 204 No Content 예상
+      alert('게시글이 수정되었습니다.');
+      navigate(`/community/${postId}`, { replace: true });
     } catch (err) {
-      console.error('게시글 등록 실패:', err);
+      console.error('게시글 수정 실패:', err);
       const status = err?.response?.status;
-      if (status === 401) alert('로그인이 필요합니다.');
-      else alert('등록에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      if (status === 401) alert('권한이 없습니다. 다시 로그인해 주세요.');
+      else if (status === 403) alert('이 게시글을 수정할 권한이 없습니다.');
+      else alert('수정에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Ctrl+Enter로 등록
   const onEditorKeyDown = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      submitPost();
+      submitEdit();
     }
   };
+
+  if (loading) {
+    return (
+      <main className="flex-grow bg-gray-50 py-10">
+        <div className="w-full max-w-4xl mx-auto px-4 text-center">
+          게시글 정보를 불러오는 중...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-grow bg-gray-50 py-10">
       <div className="w-full max-w-4xl mx-auto px-4">
         <div className="flex justify-between items-center border-b-2 border-gray-300 pb-4">
-          <h1 className="text-2xl font-bold">글쓰기</h1>
+          <h1 className="text-2xl font-bold">글 수정</h1>
           <button
-            onClick={submitPost}
+            onClick={submitEdit}
             disabled={submitting}
             className="px-6 py-2 rounded-md text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#FEAA4580', color: '#A25F0D' }}
-            title="Ctrl(⌘)+Enter 로도 등록할 수 있어요"
+            title="Ctrl(⌘)+Enter 로도 수정할 수 있어요"
           >
-            {submitting ? '등록 중...' : '등록'}
+            {submitting ? '수정 중...' : '수정'}
           </button>
         </div>
 
         <div className="mt-6 space-y-6">
-          {/* 카테고리 & 제목 */}
+          {/* 상단: 카테고리 표시 + 제목 입력 */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center gap-4">
-              <select
-                id="category"
-                value={categoryKor}
-                onChange={(e) => setCategoryKor(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm font-semibold"
-              >
-                <option value="" disabled>카테고리</option>
-                {CATEGORY_OPTIONS.map((label) => (
-                  <option key={label} value={label}>{label}</option>
-                ))}
-              </select>
+              {/* 카테고리는 명세상 수정 불가 → 배지로 표시 */}
+              <span className="px-3 py-1 text-sm font-semibold rounded-md bg-gray-100 text-gray-700 select-none">
+                {categoryKor}
+              </span>
 
               <div className="flex-grow border-l border-gray-300 ml-4 pl-4">
                 <input
@@ -113,7 +132,7 @@ function CreatePostSection() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={onEditorKeyDown}
-              placeholder="내용을 입력하세요. (0.2 온정 적립)"
+              placeholder="내용을 입력하세요. (Ctrl/⌘ + Enter = 수정)"
               className="w-full p-2 border-none outline-none focus:ring-0 resize-none text-sm"
             />
           </div>
@@ -123,9 +142,8 @@ function CreatePostSection() {
   );
 }
 
-export default function CreatePostPage() {
+export default function EditPostPage() {
   const navigate = useNavigate();
-
   const handleChangeTab = useCallback(
     (next) => navigate('/', { state: { tab: next } }),
     [navigate]
@@ -139,7 +157,7 @@ export default function CreatePostPage() {
         onChangeTab={handleChangeTab}
         onCalendarClick={handleCalendarClick}
       />
-      <CreatePostSection />
+      <EditPostSection />
       <BottomFooter />
     </div>
   );

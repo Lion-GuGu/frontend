@@ -11,9 +11,8 @@ import loginIcon from '../../assets/login.svg';
 export default function RegisterFlow() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const base = state?.base; // { username, name, email, password }
+  const base = state?.base;
 
-  // base 없으면 처음으로
   useEffect(() => {
     if (!base) navigate('/register', { replace: true });
   }, [base, navigate]);
@@ -45,7 +44,17 @@ export default function RegisterFlow() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 각 단계의 유효성
+  // ▼▼▼ 1. Daum Postcode를 여는 함수 추가 ▼▼▼
+  const handleOpenPostcode = () => {
+    new window.daum.Postcode({
+      oncomplete: function(data) {
+        // 주소 검색 완료 시, 선택된 주소를 'address' state에 저장
+        const fullAddress = data.roadAddress || data.jibunAddress;
+        setFormData((prev) => ({ ...prev, address: fullAddress }));
+      },
+    }).open();
+  };
+
   const canNext = useMemo(() => {
     if (step === 1) return !!formData.school.trim();
     if (step === 2) {
@@ -57,14 +66,13 @@ export default function RegisterFlow() {
   }, [step, formData]);
 
   const next = async () => {
-    if (!canNext) return; // 빈칸이면 넘어가지 않음
+    if (!canNext) return;
 
     if (step < 3) {
       setStep((s) => s + 1);
       return;
     }
 
-    // step === 3 → 서버 전송
     const payload = {
       username: base.username,
       password: base.password,
@@ -163,12 +171,14 @@ export default function RegisterFlow() {
         {step === 3 && (
           <div className="bg-white shadow-md rounded-xl p-8 w-96 text-center pt-12">
             <h2 className="font-bold text-xl mb-4">거주 지역 주소</h2>
+            {/* ▼▼▼ 2. 주소 입력창을 수정합니다. ▼▼▼ */}
             <input
               name="address"
               value={formData.address}
-              onChange={onChange}
-              placeholder="현재 거주지 주소"
-              className="w-full border px-3 py-2 mb-4 rounded"
+              readOnly // 직접 입력 방지
+              onClick={handleOpenPostcode} // 클릭 시 주소 검색 실행
+              placeholder="클릭하여 거주지 주소 검색"
+              className="w-full border px-3 py-2 mb-4 rounded cursor-pointer" // cursor-pointer 추가
               style={{ borderColor: '#E6E6E6' }}
             />
             <button
