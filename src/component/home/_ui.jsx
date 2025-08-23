@@ -1,4 +1,5 @@
 // src/component/home/_ui.js
+import { useState, useEffect } from "react";
 
 export function SectionTitle({ children }) {
   return (
@@ -14,8 +15,26 @@ export function CareCard({
   badge,
   emphasis = false,
   className = "",
+  onCancel,
+  onConfirm,
 }) {
   const { place, time, child, tags } = parseMeta(meta);
+
+  // ✅ 종료 시간 지났는지 상태
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    const checkTime = () => {
+      const endTime = parseEndTime(time);
+      if (!endTime) return;
+      const now = new Date();
+      setIsFinished(now >= endTime);
+    };
+
+    checkTime(); // 최초 체크
+    const timer = setInterval(checkTime, 60 * 1000); // 1분마다 확인
+    return () => clearInterval(timer);
+  }, [time]);
 
   // 뱃지 표기: prop 우선, 없으면 제목 안의 '요청/제공'으로 자동 추론
   const norm = (v) =>
@@ -29,7 +48,7 @@ export function CareCard({
     : title.includes("제공")
     ? "provide"
     : null;
-  const kind = norm(badge) ?? auto; // null이면 뱃지 없음
+  const kind = norm(badge) ?? auto;
   const label = kind === "request" ? "요청" : kind === "provide" ? "제공" : "";
   const badgeCls =
     kind === "request"
@@ -80,7 +99,7 @@ export function CareCard({
         </li>
       </ul>
 
-      {/* 태그: 테두리 없음 / #455266 / 배경 #F5F8FA / 살짝 크게 */}
+      {/* 태그 */}
       {tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2.5">
           {tags.map((t, i) => (
@@ -96,10 +115,29 @@ export function CareCard({
           ))}
         </div>
       )}
+
+      {/* ✅ 종료 시간 지나면 버튼 표시 */}
+      {isFinished && (
+        <div className="mt-6 pt-4 border-t border-slate-200 grid grid-cols-2">
+          <button
+            onClick={onCancel}
+            className="py-3 text-center text-xl font-bold text-red-500 hover:bg-gray-50 border-r border-black"
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            className="py-3 text-center text-xl font-bold text-blue-600 hover:bg-gray-50"
+          >
+            완료
+          </button>
+        </div>
+      )}
     </article>
   );
 }
 
+// meta 파싱
 function parseMeta(meta = []) {
   const out = { place: "", time: "", child: "", tags: [] };
   for (const raw of meta) {
@@ -123,4 +161,18 @@ function parseMeta(meta = []) {
     }
   }
   return out;
+}
+
+// "시간: 16시~18시" 같은 문자열에서 종료 시각 추출
+function parseEndTime(timeStr) {
+  if (!timeStr) return null;
+  const match = timeStr.match(/~\s*([0-9]{1,2})(?::([0-9]{2}))?/);
+  if (!match) return null;
+
+  const hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+
+  const end = new Date();
+  end.setHours(hour, minute, 0, 0);
+  return end;
 }

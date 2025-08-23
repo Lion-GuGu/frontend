@@ -16,8 +16,8 @@ const localizer = momentLocalizer(moment);
 const OVERLAY_SCROLLBAR_CSS = `
   /* 본문 스크롤 컨테이너의 네이티브 스크롤바 숨김 */
   .${styles.calendarHolder} .rbc-time-content {
-    scrollbar-width: none;           /* Firefox */
-    -ms-overflow-style: none;        /* IE/Edge Legacy */
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* IE/Edge Legacy */
   }
   .${styles.calendarHolder} .rbc-time-content::-webkit-scrollbar { /* Chromium/WebKit */
     width: 0px; height: 0px;
@@ -111,31 +111,28 @@ export default function Schedule() {
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // 현재 주일 때만 빨간선 표시
   const isThisWeek = useMemo(() => moment(date).isSame(moment(), "week"), [date]);
 
-  // 빨간선 위치
   const holderRef = useRef(null);
   const [nowTop, setNowTop] = useState(null);
   const [nowLeft, setNowLeft] = useState(null);
+  // ✅ 너비를 저장할 상태 추가
+  const [nowWidth, setNowWidth] = useState(null);
 
   // ===== B. 커스텀 오버레이 스크롤바 상태 =====
-  const [ovTop, setOvTop] = useState(0);          // 오버레이 트랙의 상단 위치(Holder 기준)
-  const [ovHeight, setOvHeight] = useState(0);    // 오버레이 트랙의 높이
-  const [thumbTop, setThumbTop] = useState(0);    // 썸 위치(트랙 기준)
-  const [thumbH, setThumbH] = useState(32);       // 썸 높이
+  const [ovTop, setOvTop] = useState(0);
+  const [ovHeight, setOvHeight] = useState(0);
+  const [thumbTop, setThumbTop] = useState(0);
+  const [thumbH, setThumbH] = useState(32);
   const [sbVisible, setSbVisible] = useState(false);
   const hideTimerRef = useRef(null);
   const draggingRef = useRef(false);
   const dragStateRef = useRef({ startY: 0, startThumbTop: 0, maxThumbTop: 0, maxScroll: 0 });
 
-  // 네이티브 스크롤 감춤 + 헤더 박스 제거용 스타일 주입
-  // (한 번만)
   useEffect(() => {
-    // no-op: style 태그는 JSX 아래에 렌더
+    // no-op
   }, []);
 
-  // 오버레이 트랙 위치/크기 갱신
   const measureOverlay = () => {
     const holder = holderRef.current;
     const grid = holder?.querySelector(".rbc-time-content");
@@ -146,14 +143,12 @@ export default function Schedule() {
     setOvHeight(gr.height);
   };
 
-  // 썸 크기/위치 갱신
   const updateThumb = () => {
     const holder = holderRef.current;
     const grid = holder?.querySelector(".rbc-time-content");
     if (!grid) return;
     const client = grid.clientHeight;
     const scrollH = grid.scrollHeight;
-    // 스크롤 필요 없으면 숨김
     if (scrollH <= client + 1) {
       setSbVisible(false);
       setThumbTop(0);
@@ -167,14 +162,12 @@ export default function Schedule() {
     setThumbTop(top);
   };
 
-  // 표시/자동 숨김 타이머
   const pingShow = (ms = 900) => {
     setSbVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => setSbVisible(false), ms);
   };
 
-  // 드래그 핸들러
   const onThumbMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -206,7 +199,7 @@ export default function Schedule() {
     const nextThumb = Math.min(Math.max(0, startThumbTop + dy), maxThumbTop);
     setThumbTop(nextThumb);
     const pct = nextThumb / maxThumbTop;
-    grid.scrollTop = pct * maxScroll; // 스크롤 이동(스크롤 이벤트로 동기화)
+    grid.scrollTop = pct * maxScroll;
     pingShow(1200);
   };
 
@@ -216,7 +209,6 @@ export default function Schedule() {
     document.removeEventListener("mouseup", onDocMouseUp);
   };
 
-  // 레이아웃/스크롤 이벤트 바인딩
   useEffect(() => {
     const holder = holderRef.current;
     const grid = holder?.querySelector(".rbc-time-content");
@@ -237,10 +229,11 @@ export default function Schedule() {
     grid.addEventListener("mouseenter", onEnter);
     grid.addEventListener("mousemove", onMove);
     grid.addEventListener("mouseleave", onLeave);
-    window.addEventListener("resize", () => {
+    const onResize = () => {
       measureOverlay();
       updateThumb();
-    });
+    };
+    window.addEventListener("resize", onResize);
 
     const ro = new ResizeObserver(() => {
       measureOverlay();
@@ -254,7 +247,7 @@ export default function Schedule() {
       grid.removeEventListener("mouseenter", onEnter);
       grid.removeEventListener("mousemove", onMove);
       grid.removeEventListener("mouseleave", onLeave);
-      window.removeEventListener("resize", () => {});
+      window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
   }, [date, ovHeight]);
@@ -271,7 +264,6 @@ export default function Schedule() {
     const gridRect = grid.getBoundingClientRect();
     const gutterRect = gutter.getBoundingClientRect();
 
-    // 기본 인디케이터의 계산된 top 값 사용
     const indicator =
       grid.querySelector(".rbc-current-time-indicator") ||
       holder.querySelector(".rbc-current-time-indicator");
@@ -281,20 +273,24 @@ export default function Schedule() {
       const topInGrid = parseFloat(style.top) || 0;
       const top = (gridRect.top - holderRect.top) + (topInGrid - grid.scrollTop);
       const left = gutterRect.right - holderRect.left;
+      // ✅ 스크롤 가능한 컨텐츠 영역의 너비를 가져옵니다.
+      const width = grid.clientWidth;
 
       const gridTop = gridRect.top - holderRect.top;
       const gridBottom = gridRect.bottom - holderRect.top;
       if (top < gridTop || top > gridBottom) {
         setNowTop(null);
         setNowLeft(null);
+        setNowWidth(null);
       } else {
         setNowTop(top);
         setNowLeft(left);
+        setNowWidth(width);
       }
       return;
     }
 
-    // 백업 계산
+    // Fallback calculation
     const firstGroup =
       gutter.querySelector(".rbc-timeslot-group") ||
       grid.querySelector(".rbc-timeslot-group");
@@ -305,15 +301,18 @@ export default function Schedule() {
     const y = hourHeight * (now.getHours() + now.getMinutes() / 60);
     const top = (gridRect.top - holderRect.top) + y - grid.scrollTop;
     const left = gutterRect.right - holderRect.left;
+    const width = grid.clientWidth;
 
     const gridTop = gridRect.top - holderRect.top;
     const gridBottom = gridRect.bottom - holderRect.top;
     if (top < gridTop || top > gridBottom) {
       setNowTop(null);
       setNowLeft(null);
+      setNowWidth(null);
     } else {
       setNowTop(top);
       setNowLeft(left);
+      setNowWidth(width);
     }
   };
 
@@ -338,7 +337,6 @@ export default function Schedule() {
     };
   }, [date]);
 
-  // 일정 CRUD
   const onSelectSlot = (slot) => {
     setSlotForModal({ start: slot.start, end: slot.end });
     setSelectedEvent(null);
@@ -363,7 +361,6 @@ export default function Schedule() {
     setModalOpen(false);
   };
 
-  // 이벤트 스타일
   const eventPropGetter = (event) => {
     const color = event.color || "#8ab4f8";
     return {
@@ -400,7 +397,6 @@ export default function Schedule() {
 
   return (
     <div className={styles.pageWrap}>
-      {/* A. 네이티브 스크롤 숨김 & 헤더 우측 상자 방지 */}
       <style>{OVERLAY_SCROLLBAR_CSS}</style>
 
       <aside className={styles.sidebar}>
@@ -413,7 +409,6 @@ export default function Schedule() {
 
         <MiniMonth value={date} onChange={setDate} />
 
-        {/* 단지 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
             <img className={styles.cal} src={dateSvg} alt="" />
@@ -437,7 +432,6 @@ export default function Schedule() {
           </label>
         </div>
 
-        {/* 내 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
             <img className={styles.cal} src={dateSvg} alt="" />
@@ -464,9 +458,9 @@ export default function Schedule() {
         </div>
 
         <div className={styles.calendarHolder} ref={holderRef}>
-          {/* 현재 주 + 화면 안에 있을 때만 빨간선 표시 */}
+          {/* ✅ style에 width를 추가합니다. */}
           {isThisWeek && nowTop != null && nowLeft != null && (
-            <div className={styles.nowLine} style={{ top: nowTop, left: nowLeft }}>
+            <div className={styles.nowLine} style={{ top: nowTop, left: nowLeft, width: nowWidth }}>
               <span className={styles.nowDot} />
             </div>
           )}
@@ -491,7 +485,6 @@ export default function Schedule() {
             drilldownView={null}
           />
 
-          {/* ===== C. 커스텀 오버레이 스크롤바 (사용시에만 보임) ===== */}
           <div
             style={{
               position: "absolute",
@@ -501,7 +494,7 @@ export default function Schedule() {
               width: 10,
               opacity: sbVisible ? 1 : 0,
               transition: "opacity .18s linear",
-              pointerEvents: "none",       // 트랙은 이벤트 차단
+              pointerEvents: "none",
             }}
           >
             <div
@@ -515,13 +508,12 @@ export default function Schedule() {
                 borderRadius: 9999,
                 background: "rgba(0,0,0,.28)",
                 boxShadow: "0 0 1px rgba(0,0,0,.3)",
-                pointerEvents: "auto",      // 썸만 드래그 가능
+                pointerEvents: "auto",
                 cursor: "grab",
               }}
               onMouseEnter={() => setSbVisible(true)}
             />
           </div>
-          {/* ===== End overlay scrollbar ===== */}
         </div>
       </main>
 
