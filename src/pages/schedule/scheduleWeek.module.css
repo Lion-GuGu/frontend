@@ -1,0 +1,327 @@
+/* ========== 전체 페이지 레이아웃 ========== */
+.pageWrap {
+  display: flex;
+  height: 100vh;
+  background: #fff;
+  color: #1f1f1f;
+  font-family: "Pretendard", system-ui, -apple-system, Segoe UI, Roboto,
+    "Noto Sans KR", Arial, sans-serif;
+}
+
+/* ========== 사이드바 ========== */
+.sidebar {
+  width: 280px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.sidebar .header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+}
+
+.font {
+  height: 20px;
+}
+
+.cal {
+  width: 20px;
+  height: 20px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* ========== 사이드바 일정 리스트 ========== */
+.calendarList {
+  margin-top: 20px;
+}
+
+.calItem {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* ========== 미니 달력 ========== */
+.miniMonth {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: #fff;
+  max-width: 248px;
+}
+
+.miniMonthHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.miniMonthTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.navBtn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.miniMonthDows,
+.miniMonthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dowCell {
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 0;
+  font-weight: 500;
+}
+
+.miniDay {
+  font-size: 12px;
+  padding: 6px 0;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.miniDay:hover {
+  background: #f0f0f0;
+}
+
+.today {
+  border: 1px solid #4285f4;
+  border-radius: 4px;
+}
+
+.selected {
+  background: #e8f0fe;
+  border-radius: 4px;
+}
+
+.otherMonth {
+  color: #ccc;
+}
+
+/* ========== 메인 영역 상단바 ========== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.leftControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topBtn:hover {
+  background: #e0e0e0;
+}
+
+.titleMonth {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rightControls {
+  font-size: 13px;
+}
+
+.viewSwitch {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f1f3f4;
+}
+
+/* ========== 캘린더 영역 ========== */
+.calendarHolder {
+  position: relative;
+  flex: 1;
+  padding: 10px;
+  background: #fff;
+}
+
+.rbc-time-view {
+  border: 1px solid #ddd;
+}
+
+.rbc-time-header {
+  background: #f8f8f8;
+  font-weight: bold;
+}
+
+.rbc-time-gutter .rbc-time-slot {
+  font-size: 12px;
+  color: #616161;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #f7f7f7;
+}
+
+.rbc-today {
+  background: #fff8f6 !important;
+}
+
+.rbc-now {
+  background-color: red !important; /* 초록 → 빨강 */
+  height: 2px; /* 라인 두께 조절 */
+  width: 100% !important; /* 캘린더 가로 전체 */
+  z-index: 2;
+}
+
+/* 이벤트 카드 */
+.rbc-event {
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+/* 선택 슬롯 하이라이트 */
+.rbc-slot-selection {
+  background: rgba(66, 133, 244, 0.15) !important;
+}
+
+.rbc-current-time-indicator {
+  background-color: red !important; /* 라인 색상 */
+}
+
+.rbc-current-time-indicator::before {
+  background-color: red !important; /* 점 색상 */
+}
+
+/* ========== 현재 시간 가로 빨간줄 ========== */
+.nowLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ea4335;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.nowDot {
+  position: absolute;
+  left: -5px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ea4335;
+}
+
+.pageWrap {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: #fff;
+}
+
+.eventTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-shrink: 0;
+  margin-bottom: 18px;
+}
+
+.viewSwitch {
+  position: relative;
+  display: inline-block;
+  background: none;
+}
+
+.selectView {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 4px 18px 4px 4px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.selectView:focus {
+  outline: none; /* 파란 테두리도 제거 */
+  box-shadow: none; /* 그림자 제거 */
+}
+
+.arrowIcon {
+  position: absolute;
+  right: 8px; /* 글자와 화살표 간격 8px */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  pointer-events: none; /* 클릭 이벤트 막기 */
+}
