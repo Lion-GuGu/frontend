@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import styles from "./scheduleModal.module.css";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
 
 const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
   const [title, setTitle] = useState(event?.title || "");
@@ -58,6 +60,11 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
       onDelete(event.id);
       onClose();
     }
+  };
+
+  const onAddEvent = async (newEvent) => {
+    const savedEvent = await addEventAPI(newEvent);
+    if (savedEvent) addEvent(savedEvent);
   };
 
   return (

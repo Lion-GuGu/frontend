@@ -12,6 +12,7 @@ import nameMark from "../../assets/name.svg";
 import logo from "../../assets/logo.svg";
 import cal from "../../assets/cal.svg";
 import Premium from "../../assets/Premium.svg";
+import { fetchEvents, addEventAPI } from "../../api/Events";
 
 moment.locale("ko");
 const localizer = momentLocalizer(moment);
@@ -149,6 +150,15 @@ export default function ScheduleMonth() {
     []
   );
 
+  const handleRangeChange = async (range) => {
+    if (!range) return;
+    const start = Array.isArray(range) ? range[0] : range.start;
+    const end = Array.isArray(range) ? range[range.length - 1] : range.end;
+
+    const data = await fetchEvents(start, end);
+    setEvents(data); // EventContext에 저장
+  };
+
   return (
     <div className={styles.pageWrap}>
       <aside className={styles.sidebar}>
@@ -236,6 +246,7 @@ export default function ScheduleMonth() {
             endAccessor="end"
             onSelectSlot={onSelectSlot}
             onSelectEvent={onSelectEvent}
+            onRangeChange={handleRangeChange}
             style={{ height: "calc(100vh - 84px)" }}
             formats={formats}
             eventPropGetter={eventPropGetter}

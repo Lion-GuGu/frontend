@@ -1,5 +1,5 @@
 // src/pages/schedule/ScheduleWeek.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import moment from "moment";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -11,6 +11,7 @@ import nameMark from "../../assets/name.svg";
 import logo from "../../assets/logo.svg";
 import cal from "../../assets/cal.svg";
 import Premium from "../../assets/Premium.svg";
+import { fetchEvents } from "../../api/Events";
 
 moment.locale("ko");
 const localizer = momentLocalizer(moment);
@@ -99,13 +100,51 @@ function CustomEvent({ event }) {
     </div>
   );
 }
+
+// 실시간 시간 표시
+function CurrentTimeIndicator() {
+  const [topPx, setTopPx] = useState(0);
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+
+      const container = document.querySelector(".rbc-time-content");
+      if (container) {
+        const slotHeight = container.offsetHeight / 24; // 24시간 기준
+        const newTop = hour * slotHeight + (minute / 60) * slotHeight;
+        setTopPx(newTop);
+      }
+    };
+
+    update();
+    const interval = setInterval(update, 60000); // 1분마다 갱신
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: topPx,
+        left: 0,
+        right: 0,
+        height: 2,
+        backgroundColor: "red",
+        zIndex: 1000,
+      }}
+    />
+  );
+}
+
 export default function ScheduleWeek() {
   const [date, setDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
-  const [view, setView] = useState("week");
   const [isWeekView, setIsWeekView] = useState(true);
 
   const onSelectSlot = (slot) => {
@@ -151,14 +190,54 @@ export default function ScheduleWeek() {
     []
   );
 
+  const recalcNowLine = () => {
+    const holder = holderRef.current;
+    if (!holder) return;
+
+    const grid = holder.querySelector(".rbc-time-content");
+    const gutter = holder.querySelector(".rbc-time-gutter");
+    if (!grid || !gutter) return;
+
+    const holderRect = holder.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    const gutterRect = gutter.getBoundingClientRect();
+
+    const firstGroup = grid.querySelector(".rbc-timeslot-group");
+    if (!firstGroup) return;
+
+    const slotHeight = firstGroup.getBoundingClientRect().height;
+    const now = new Date();
+    const y = slotHeight * (now.getHours() + now.getMinutes() / 60);
+
+    const top = y - grid.scrollTop;
+    const left = gutterRect.right - holderRect.left;
+    const width = grid.clientWidth;
+
+    // 화면 안에 있으면 상태 업데이트, 아니면 null 처리
+    if (top < 0 || top > grid.clientHeight) {
+      setNowTop(null);
+      setNowLeft(null);
+      setNowWidth(null);
+    } else {
+      setNowTop(top);
+      setNowLeft(left);
+      setNowWidth(width);
+    }
+  };
+
+  const handleRangeChange = async (range) => {
+    if (!range) return;
+    const start = Array.isArray(range) ? range[0] : range.start;
+    const end = Array.isArray(range) ? range[range.length - 1] : range.end;
+
+    const data = await fetchEvents(start, end);
+    setEvents(data);
+  };
+
   return (
     <div className={styles.pageWrap}>
       <aside className={styles.sidebar}>
-        <Link
-          to="/"
-          className={styles.link}
-          onClick={() => onChangeTab?.("홈")}
-        >
+        <Link to="/" className={styles.link}>
           <img
             src={logo}
             alt="품아이 로고"
@@ -168,6 +247,7 @@ export default function ScheduleWeek() {
         </Link>
 
         <MiniMonth value={date} onChange={setDate} />
+
         {/* 단지 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
@@ -191,11 +271,12 @@ export default function ScheduleWeek() {
             기타
           </label>
         </div>
+
         {/* 내 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
             <img className={styles.calednar} src={cal} alt="달력" />
-            <div className={styles.sectionTitle}>단지 일정</div>
+            <div className={styles.sectionTitle}>내 일정</div>
           </div>
           <label className={styles.calItem}>
             <span className={styles.dot} style={{ background: "#ED8611" }} />내
@@ -222,22 +303,25 @@ export default function ScheduleWeek() {
           </div>
         </div>
 
-        <Calendar
-          localizer={localizer}
-          date={date}
-          onNavigate={setDate}
-          selectable
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          onSelectSlot={onSelectSlot}
-          onSelectEvent={onSelectEvent}
-          style={{ height: "calc(100vh - 112px)" }}
-          eventPropGetter={eventPropGetter}
-          components={components}
-          formats={formats}
-          view={isWeekView ? "week" : "month"}
-        />
+        <div style={{ position: "relative", height: "calc(100vh - 112px)" }}>
+          <Calendar
+            localizer={localizer}
+            date={date}
+            onNavigate={setDate}
+            selectable
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            onSelectSlot={onSelectSlot}
+            onSelectEvent={onSelectEvent}
+            onRangeChange={handleRangeChange}
+            eventPropGetter={eventPropGetter}
+            components={components}
+            formats={formats}
+            view={isWeekView ? "week" : "month"}
+          />
+          {isWeekView && <CurrentTimeIndicator />}
+        </div>
 
         {modalOpen && (
           <ScheduleModal
