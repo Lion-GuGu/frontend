@@ -52,7 +52,7 @@ export default function LogoSearchRow({
       try {
         setLoadingPoint(true);
         const { data } = await api.get("/api/points/me");
-        const bal = data?.balance ?? data?.point ?? data?.points ?? 0; // 명세: { balance: number }
+        const bal = data?.balance ?? data?.point ?? data?.points ?? 0;
         if (alive) setPointBalance(bal);
       } catch (e) {
         console.error("포인트 잔액 조회 실패:", e);
@@ -63,8 +63,7 @@ export default function LogoSearchRow({
     };
 
     fetchPoints();
-
-    // 탭 복귀/뒤로가기로 돌아왔을 때도 갱신
+    
     const onShow = () => fetchPoints();
     window.addEventListener("pageshow", onShow);
     document.addEventListener("visibilitychange", onShow);
@@ -143,14 +142,17 @@ export default function LogoSearchRow({
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
+
+          {/* --- ▼▼▼▼▼ [수정된 부분] ▼▼▼▼▼ --- */}
+          {/* 숫자 대신 작은 점(dot)으로 변경 */}
           {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-red-600 text-white text-xs font-bold">
-              {notificationCount}
-            </span>
+            <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-600 ring-2 ring-white" />
           )}
+          {/* --- ▲▲▲▲▲ [수정된 부분] ▲▲▲▲▲ --- */}
+
         </IconButton>
 
-        {/* ✅ 포인트 잔액 표시부 → 클릭 시 /points 이동 */}
+        {/* ✅ 포인트 잔액 표시부 */}
         <Link
           to="/points"
           className="flex flex-col text-xs leading-tight text-left group cursor-pointer select-none"

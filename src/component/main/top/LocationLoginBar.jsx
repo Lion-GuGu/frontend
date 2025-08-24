@@ -1,5 +1,4 @@
-// src/component/main/LocationLoginBar.jsx
-import React, { useEffect, useState, useCallback } from 'react'; // 이 부분을 수정했습니다.
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api, { getToken, clearToken, fetchMe } from '../../../lib/api';
 
@@ -34,9 +33,19 @@ export default function LocationLoginBar() {
 
     (async () => {
       try {
-        const user = await fetchMe();
-        setMe(user);
-      } catch {
+        // 1. 기본 사용자 정보 가져오기 (id, username 등)
+        const baseUser = await fetchMe();
+        if (!baseUser || !baseUser.id) {
+          throw new Error('기본 사용자 정보를 가져올 수 없습니다.');
+        }
+
+        // 2. 명세서 기반으로 id를 사용해 전체 사용자 정보 (주소 포함) 다시 요청
+        const { data: fullUser } = await api.get(`/users/${baseUser.id}`);
+        setMe(fullUser); // 주소가 포함된 전체 정보로 상태 업데이트
+
+      } catch (err) {
+        console.error("사용자 정보 로딩 실패:", err);
+        // API 요청 실패 시 JWT 토큰에서 최소 정보 파싱 (주소 정보는 없음)
         const p = decodeJwtSafe(token);
         if (p) {
           setMe({
@@ -68,7 +77,7 @@ export default function LocationLoginBar() {
         {me && me.childResidence ? (
           <span>{me.childResidence}</span>
         ) : (
-          <span>{loading ? '' : '로그인 후 위치 정보 표시'}</span>
+          <span>{loading ? '위치 확인 중...' : '로그인 후 위치 정보 표시'}</span>
         )}
       </div>
 

@@ -113,7 +113,7 @@ function CreatePostSection() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={onEditorKeyDown}
-              placeholder="내용을 입력하세요. (0.2 온정 적립)"
+              placeholder="내용을 입력하세요. (10 온정 적립)"
               className="w-full p-2 border-none outline-none focus:ring-0 resize-none text-sm"
             />
           </div>
