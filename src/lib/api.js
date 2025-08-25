@@ -5,7 +5,7 @@ export const AUTH_KEY = "access_token"; // 액세스 토큰 저장 키
 export const AUTH_UID_KEY = "auth_uid"; // 로그인 시 받은 사용자 id 저장 키(옵션)
 
 const api = axios.create({
-  baseURL: "http://15.164.169.237:8080",
+  baseURL: "https://kumohgugu.duckdns.org",
   // withCredentials: true, // ← 쿠키 세션을 쓸 때만 켜세요. (CORS 서버 설정 필요)
   timeout: 10000,
 });
