@@ -57,9 +57,9 @@ export function getAuthUserId() {
   );
 }
 
-/* ============================
+/* ===========================
  * Axios 인터셉터
- * ============================ */
+ * =========================== */
 api.interceptors.request.use((config) => {
   const t = getToken();
   if (t) config.headers.Authorization = `Bearer ${t}`;
