@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import styles from "./scheduleModal.module.css";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
 
 const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
   const [title, setTitle] = useState(event?.title || "");
@@ -15,6 +17,7 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
   const [description, setDescription] = useState(event?.description || "");
   const [tags, setTags] = useState(event?.tags || []);
   const [newTag, setNewTag] = useState("");
+  const [selectedDate, setSelectedDate] = useState(slot.start);
 
   const addTag = (e) => {
     if (e.key === "Enter" && newTag.trim() !== "") {
@@ -57,6 +60,11 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
       onDelete(event.id);
       onClose();
     }
+  };
+
+  const onAddEvent = async (newEvent) => {
+    const savedEvent = await addEventAPI(newEvent);
+    if (savedEvent) addEvent(savedEvent);
   };
 
   return (
@@ -112,20 +120,52 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
               </svg>
             </div>
             <div className={styles.dateTime}>
-              <div className={styles.dateDisplay}>
-                {format(slot.start, "MM월 dd일 (EEEE)", { locale: ko })}
-              </div>
-              <input
-                type="time"
+              <DatePicker
+                selected={selectedDate}
+                onChange={(date) => setSelectedDate(date)}
+                locale={ko}
+                dateFormat="MM월 dd일 (EEEE)"
+                customInput={
+                  <div
+                    className={styles.dateDisplay}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {format(selectedDate, "MM월 dd일 (EEEE)", { locale: ko })}
+                  </div>
+                }
+              />
+
+              <select
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-              />
-              <div className={styles.separator}>~</div>
-              <input
-                type="time"
+                className={styles.timeSelect}
+              >
+                {Array.from({ length: 24 }, (_, h) => {
+                  const hour = h.toString().padStart(2, "0");
+                  return (
+                    <option key={hour} value={`${hour}:00`}>
+                      {hour}:00
+                    </option>
+                  );
+                })}
+              </select>
+
+              <span> - </span>
+
+              <select
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-              />
+                className={styles.timeSelect}
+              >
+                {Array.from({ length: 24 }, (_, h) => {
+                  const hour = h.toString().padStart(2, "0");
+                  return (
+                    <option key={hour} value={`${hour}:00`}>
+                      {hour}:00
+                    </option>
+                  );
+                })}
+              </select>
             </div>
           </div>
 

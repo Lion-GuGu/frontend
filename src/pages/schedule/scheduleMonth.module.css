@@ -1,0 +1,270 @@
+/* ========== 전체 페이지 레이아웃 ========== */
+.pageWrap {
+  display: flex;
+  height: 100vh;
+  background: #fff;
+  color: #1f1f1f;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* ========== 사이드바 ========== */
+.sidebar {
+  width: 280px;
+  padding: 16px;
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* 헤더 (로고 + 텍스트) */
+.sidebar .header {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 로고와 텍스트 간격 */
+  margin-bottom: 16px; /* 아래 여백 */
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+}
+
+.font {
+  height: 20px;
+}
+
+.cal {
+  width: 20px;
+  height: 20px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* 사이드바 일정 리스트 */
+.calendarList {
+  margin-top: 20px;
+}
+
+.calItem {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* 링크 스타일 */
+.link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-shrink: 0;
+  margin-bottom: 18px;
+}
+
+/* ========== 미니 달력 ========== */
+.miniMonth {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: #fff;
+  max-width: 248px;
+}
+
+.miniMonthHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.miniMonthTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.navBtn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.miniMonthDows,
+.miniMonthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dowCell {
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 0;
+  font-weight: 500;
+}
+
+.miniDay {
+  font-size: 12px;
+  padding: 6px 0;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.miniDay:hover {
+  background: #f0f0f0;
+}
+
+.today {
+  border: 1px solid #4285f4;
+  border-radius: 4px;
+}
+
+.selected {
+  background: #e8f0fe;
+  border-radius: 4px;
+}
+
+/* ========== 메인 영역 ========== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.leftControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topBtn:hover {
+  background: #e0e0e0;
+}
+
+.titleMonth {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.viewSwitch {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f1f3f4;
+}
+
+/* ========== 캘린더 영역 ========== */
+.calendarHolder {
+  flex: 1;
+  padding: 10px;
+}
+
+/* react-big-calendar 기본 색상 조정 */
+.rbc-month-view {
+  border: none !important;
+}
+
+.rbc-header {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 0 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+.rbc-date-cell {
+  font-size: 12px;
+  padding: 2px 4px !important;
+}
+
+.rbc-off-range-bg {
+  background: #fff !important; /* 기본 흐림 처리 제거 */
+}
+
+.rbc-today {
+  background: #fce8e6 !important;
+}
+
+/* ========== 이벤트 스타일 (월간 뷰) ========== */
+.eventItem {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 1px 2px;
+  line-height: 1.2;
+}
+
+.eventDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.eventTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewSwitch {
+  position: relative;
+  display: inline-block;
+  background: none;
+}
+
+.selectView {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 4px 18px 4px 4px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.selectView:focus {
+  outline: none; /* 파란 테두리도 제거 */
+  box-shadow: none; /* 그림자 제거 */
+}
+
+.arrowIcon {
+  position: absolute;
+  right: 8px; /* 글자와 화살표 간격 8px */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  pointer-events: none; /* 클릭 이벤트 막기 */
+}

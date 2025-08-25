@@ -1,28 +1,28 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+// src/pages/schedule/ScheduleMonth.jsx
+import React, { useMemo, useState } from "react";
 import moment from "moment";
-import "moment/locale/ko"; // 🇰🇷 한국어 로케일 임포트
+import "moment/locale/ko";
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "./scheduleMonth.module.css";
 import ScheduleModal from "../../component/cal/ScheduleModal";
+import { useEvents } from "./EventContext";
+import { Link } from "react-router-dom";
+import nameMark from "../../assets/name.svg";
+import logo from "../../assets/logo.svg";
+import cal from "../../assets/cal.svg";
+import Premium from "../../assets/Premium.svg";
+import { fetchEvents, addEventAPI } from "../../api/Events";
 
-// moment 로케일 설정
 moment.locale("ko");
-
 const localizer = momentLocalizer(moment);
 
-// 월 범위 문자열 포맷
-function formatMonthRange(date) {
-  const m = moment(date);
-  return m.format("YYYY년 M월");
-}
-
-// 좌측 미니 먼슬리
+// 좌측 미니 달력
 function MiniMonth({ value, onChange }) {
   const m = moment(value);
-  const start = moment(m).startOf("month").startOf("week");
-  const end = moment(m).endOf("month").endOf("week");
   const days = [];
+  const start = moment(value).startOf("month");
+  const end = moment(value).endOf("month");
   const cursor = start.clone();
 
   while (cursor.isBefore(end) || cursor.isSame(end, "day")) {
@@ -79,14 +79,17 @@ function MiniMonth({ value, onChange }) {
   );
 }
 
-// 이벤트 커스텀 렌더링 (색 동그라미 + 제목)
+// 이벤트 렌더링
 function CustomEvent({ event }) {
   return (
-    <div className={styles.eventItem}>
-      <span
-        className={styles.eventDot}
-        style={{ backgroundColor: event.color || "#8ab4f8" }}
-      />
+    <div
+      className={styles.eventItem}
+      style={{
+        backgroundColor: event.color || "#8ab4f8",
+        color: "white",
+      }}
+    >
+      <span className={styles.eventDot} style={{ backgroundColor: "#fff" }} />
       <span className={styles.eventTitle}>{event.title}</span>
     </div>
   );
@@ -94,56 +97,51 @@ function CustomEvent({ event }) {
 
 export default function ScheduleMonth() {
   const [date, setDate] = useState(new Date());
-  const [events, setEvents] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const timeContentRef = useRef(null);
+  const { events, addEvent, updateEvent, deleteEvent } = useEvents();
+  const [isWeekView, setIsWeekView] = useState(true);
+  const [view, setView] = useState("month");
 
-  // 일정 추가
+  const eventPropGetter = (event) => {
+    const color = event.color || "#8ab4f8";
+    return {
+      style: {
+        backgroundColor: color,
+        border: `1px solid ${color}AA`,
+        borderRadius: 6,
+        padding: "2px 6px",
+        fontSize: 12,
+        color: "white",
+      },
+    };
+  };
+
   const onSelectSlot = (slot) => {
     setSlotForModal({ start: slot.start, end: slot.end });
     setSelectedEvent(null);
     setModalOpen(true);
   };
 
-  // 일정 클릭 → 수정/삭제 모달
   const onSelectEvent = (event) => {
     setSelectedEvent(event);
     setSlotForModal({ start: event.start, end: event.end });
     setModalOpen(true);
   };
 
-  // 새 일정 추가
-  const onAddEvent = (form) => {
-    const saved = { ...form, id: Date.now() };
-    setEvents((prev) => [...prev, saved]);
-    setModalOpen(false);
-  };
-
-  // 일정 수정
-  const onUpdateEvent = (form) => {
-    setEvents((prev) => prev.map((e) => (e.id === form.id ? form : e)));
-    setModalOpen(false);
-  };
-
-  // 일정 삭제
-  const onDeleteEvent = (id) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-    setModalOpen(false);
-  };
-
   const components = useMemo(
     () => ({
       toolbar: () => null,
-      event: CustomEvent, // ✅ 이벤트 커스텀 컴포넌트 등록
+      event: CustomEvent,
     }),
     []
   );
 
   const formats = useMemo(
     () => ({
-      dayFormat: (date) => moment(date).format("D"),
+      timeGutterFormat: (date) => moment(date).format("HH:mm"),
+      dayFormat: (date) => moment(date).format("D일"),
       weekdayFormat: (date) =>
         ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"][
           date.getDay()
@@ -152,17 +150,37 @@ export default function ScheduleMonth() {
     []
   );
 
+  const handleRangeChange = async (range) => {
+    if (!range) return;
+    const start = Array.isArray(range) ? range[0] : range.start;
+    const end = Array.isArray(range) ? range[range.length - 1] : range.end;
+
+    const data = await fetchEvents(start, end);
+    setEvents(data); // EventContext에 저장
+  };
+
   return (
     <div className={styles.pageWrap}>
       <aside className={styles.sidebar}>
-        <div className={styles.header}>
-          <img className={styles.logo} src="logo.svg" alt="로고" />
-          <img className={styles.font} src="font.svg" alt="품아이" />
-        </div>
+        <Link
+          to="/"
+          className={styles.link}
+          onClick={() => onChangeTab?.("홈")}
+        >
+          <img
+            src={logo}
+            alt="품아이 로고"
+            className="h-9 w-9 md:h-10 md:w-10"
+          />
+          <img src={nameMark} alt="품아이" className="h-8 md:h-9" />
+        </Link>
+
         <MiniMonth value={date} onChange={setDate} />
+
+        {/* 단지 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
-            <img className={styles.cal} src="cal.svg" alt="" />
+            <img className={styles.calednar} src={cal} alt="달력" />
             <div className={styles.sectionTitle}>단지 일정</div>
           </div>
           <label className={styles.calItem}>
@@ -182,9 +200,11 @@ export default function ScheduleMonth() {
             기타
           </label>
         </div>
+
+        {/* 내 일정 */}
         <div className={styles.calendarList}>
           <div className={styles.header}>
-            <img className={styles.cal} src="cal.svg" alt="" />
+            <img className={styles.calednar} src={cal} alt="달력" />
             <div className={styles.sectionTitle}>내 일정</div>
           </div>
           <label className={styles.calItem}>
@@ -197,16 +217,21 @@ export default function ScheduleMonth() {
       <main className={styles.main}>
         <div className={styles.topBar}>
           <div className={styles.leftControls}>
-            <button
-              className={styles.topBtn}
-              onClick={() => setDate(new Date())}
-            >
-              오늘
-            </button>
-            <div className={styles.titleMonth}>{formatMonthRange(date)}</div>
-          </div>
-          <div className={styles.rightControls}>
-            <div className={styles.viewSwitch}>월</div>
+            <div className={styles.titleMonth}>
+              {moment(date).format("YYYY년 M월")}
+            </div>
+
+            <div className={styles.viewSwitch}>
+              <select
+                value={isWeekView ? "week" : "month"}
+                onChange={(e) => setIsWeekView(e.target.value === "week")}
+                className={styles.selectView}
+              >
+                <option value="week">주</option>
+                <option value="month">월</option>
+              </select>
+              <img src={Premium} alt="화살표" className={styles.arrowIcon} />
+            </div>
           </div>
         </div>
 
@@ -214,7 +239,6 @@ export default function ScheduleMonth() {
           <Calendar
             localizer={localizer}
             date={date}
-            view={Views.MONTH}
             onNavigate={setDate}
             selectable
             events={events}
@@ -222,9 +246,12 @@ export default function ScheduleMonth() {
             endAccessor="end"
             onSelectSlot={onSelectSlot}
             onSelectEvent={onSelectEvent}
+            onRangeChange={handleRangeChange}
             style={{ height: "calc(100vh - 84px)" }}
-            components={components}
             formats={formats}
+            eventPropGetter={eventPropGetter}
+            components={components}
+            view={isWeekView ? "week" : "month"}
           />
         </div>
       </main>
@@ -234,9 +261,9 @@ export default function ScheduleMonth() {
           slot={slotForModal}
           event={selectedEvent}
           onClose={() => setModalOpen(false)}
-          onAdd={onAddEvent}
-          onUpdate={onUpdateEvent}
-          onDelete={onDeleteEvent}
+          onAdd={addEvent}
+          onUpdate={updateEvent}
+          onDelete={deleteEvent}
         />
       )}
     </div>
