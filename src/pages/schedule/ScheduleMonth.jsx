@@ -5,7 +5,7 @@ import "moment/locale/ko";
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "./scheduleMonth.module.css";
-import ScheduleModal from "../../component/cal/ScheduleModal";
+import ScheduleModal from "../../component/cal/ScheduleModal.jsx";
 import { useEvents } from "./EventContext";
 import { Link } from "react-router-dom";
 import nameMark from "../../assets/name.svg";
