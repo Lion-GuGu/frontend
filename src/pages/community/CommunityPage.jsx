@@ -12,6 +12,27 @@ function getPostId(p) { return p.id ?? p.postId ?? p.postID ?? p.boardId ?? null
 function extractViewCount(p) { return p.viewCount ?? p.views ?? p.view_count ?? p.hit ?? p.readCount ?? null; }
 function extractCommentCount(p) { return p.commentCount ?? p.commentsCount ?? p.replyCount ?? p.repliesCount ?? p.comment_count ?? 0; }
 
+// ===== 추천 돌봄 카드 =====
+function RecCard({ rec }) {
+  const name = rec?.name ?? rec?.username ?? '이용자';
+  const username = rec?.username ? `@${rec.username}` : '';
+  const area = rec?.childResidence ?? rec?.residence ?? rec?.region ?? '-';
+
+  return (
+    <div className="rounded-2xl bg-white shadow-sm p-4 border border-gray-100 flex flex-col gap-1">
+      <div className="text-lg font-semibold">{name}</div>
+      <div className="text-sm text-gray-500">{username}</div>
+      <div className="mt-2 text-sm">
+        <span className="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+          활동지역: {area}
+        </span>
+      </div>
+      {/* 필요 시 프로필/신청 이동 버튼 자리 */}
+      {/* <button className="mt-3 text-sm font-medium underline">프로필 보기</button> */}
+    </div>
+  );
+}
+
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
   const [userMap, setUserMap] = useState({});
@@ -19,6 +40,11 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true);
   const [needLogin, setNeedLogin] = useState(false);
   const [categoryKor, setCategoryKor] = useState('전체');
+
+  // --- 추천 돌봄 상태 ---
+  const [recs, setRecs] = useState([]);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [recsError, setRecsError] = useState('');
 
   // --- 페이지네이션 & 검색 상태 관리 ---
   const [page, setPage] = useState(0);
@@ -33,7 +59,47 @@ export default function CommunityPage() {
     [categoryKor]
   );
 
-  // 1) 글 목록 (페이지/검색어 변경 시 다시 불러오도록 수정)
+  // ===== A) 오늘의 추천 돌봄 불러오기 =====
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return; // 비로그인 시 표시 안 함
+
+    // 우선순위: URL ?requestId= → localStorage.current_request_id
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl = urlParams.get('requestId');
+    const fromStorage = localStorage.getItem('current_request_id');
+    const requestId = fromUrl ?? fromStorage;
+
+    if (!requestId) {
+      setRecs([]);
+      return;
+    }
+
+    let alive = true;
+    (async () => {
+      try {
+        setRecsLoading(true);
+        setRecsError('');
+        const { data } = await api.get(`/api/requests/${requestId}/recommendations`);
+        // 배열 또는 래핑된 형태 모두 대응
+        const list = Array.isArray(data)
+          ? data
+          : (data?.content ?? data?.items ?? data?.recommendations ?? []);
+        if (alive) setRecs(Array.isArray(list) ? list : []);
+      } catch (e) {
+        if (alive) {
+          setRecs([]);
+          setRecsError('추천 목록을 불러오지 못했어요.');
+          console.error('추천 돌봄 조회 실패:', e);
+        }
+      } finally {
+        if (alive) setRecsLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // ===== B) 글 목록 (페이지/검색어 변경 시 재조회) =====
   useEffect(() => {
     const t = getToken();
     if (!t) {
@@ -50,7 +116,7 @@ export default function CommunityPage() {
           page,
           size,
           ...(categoryEnum ? { category: categoryEnum } : {}),
-          ...(submittedSearch ? { q: submittedSearch } : {}), // 검색어 파라미터 추가
+          ...(submittedSearch ? { q: submittedSearch } : {}),
         };
         const { data } = await api.get('/api/community/posts', { params });
         const items = Array.isArray(data) ? data : (data?.content ?? data?.items ?? data?.posts ?? []);
@@ -75,9 +141,9 @@ export default function CommunityPage() {
       }
     })();
     return () => { alive = false; };
-  }, [categoryEnum, page, size, submittedSearch]); // submittedSearch가 변경될 때도 재실행
+  }, [categoryEnum, page, size, submittedSearch]);
 
-  // 2) 작성자 정보 조회 (이전과 동일)
+  // ===== C) 작성자 정보 조회 =====
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -102,7 +168,7 @@ export default function CommunityPage() {
     return () => { alive = false; };
   }, [posts, userMap]);
 
-  // 3) 조회수 병합 로직 (이전과 동일)
+  // ===== D) 조회수 병합 =====
   useEffect(() => {
     const applyFromSession = () => {
       const idsInList = new Set(posts.map(getPostId).filter((id) => id != null).map(String));
@@ -132,38 +198,60 @@ export default function CommunityPage() {
     };
   }, [posts, viewMap]);
 
-  // 4) 목록용 정규화 (이전과 동일)
+  // ===== E) 목록 정규화 =====
   const normalizedPosts = useMemo(() => posts.map((p) => {
     const id = getPostId(p);
     const vcFromList = extractViewCount(p);
     const mergedVC = vcFromList != null ? vcFromList : (id != null ? viewMap[id] ?? 0 : 0);
-    return { ...p, viewCount: mergedVC, commentCount: extractCommentCount(p), };
+    return { ...p, viewCount: mergedVC, commentCount: extractCommentCount(p) };
   }), [posts, viewMap]);
 
-  // --- 페이지 & 검색 핸들러 함수들 ---
+  // --- 페이지 & 검색 핸들러 ---
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < pageInfo.totalPages) {
       setPage(newPage);
       window.scrollTo(0, 0);
     }
   };
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(0); // 검색 시 첫 페이지로 이동
+    setPage(0);
     setSubmittedSearch(searchQuery);
   };
-  // ------------------------------------
 
   if (loading) return <div className="p-10">게시글 불러오는 중...</div>;
 
   return (
     <div className="w-full flex-1 flex flex-col">
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10 flex-1">
+
+        {/* ===== 오늘의 추천 돌봄 ===== */}
+        {getToken() && (recsLoading || recs.length > 0 || recsError) && (
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold mb-3">오늘의 추천 돌봄</h2>
+            {recsLoading && <div className="text-gray-500">불러오는 중…</div>}
+            {!!recsError && !recsLoading && (
+              <div className="text-sm text-red-500">{recsError}</div>
+            )}
+            {!recsLoading && recs.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recs.map((r) => (
+                  <RecCard key={r.id ?? r.username ?? Math.random()} rec={r} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         <h1 className="text-3xl font-bold mb-6">전체글 보기</h1>
         <BoardControls category={categoryKor} onCategoryChange={setCategoryKor} showWriteButton />
-        <PostTable posts={normalizedPosts} userMap={userMap} emptyMessage={needLogin ? '로그인 후 확인 가능합니다.' : '게시글이 없습니다.'} />
+        <PostTable
+          posts={normalizedPosts}
+          userMap={userMap}
+          emptyMessage={needLogin ? '로그인 후 확인 가능합니다.' : '게시글이 없습니다.'}
+        />
       </div>
+
       <div className="w-full py-8" style={{ backgroundColor: '#F2F2F2' }}>
         <PaginationAndSearch
           currentPage={page}
