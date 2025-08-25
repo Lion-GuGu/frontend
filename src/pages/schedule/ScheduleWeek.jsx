@@ -11,7 +11,7 @@ import nameMark from "../../assets/name.svg";
 import logo from "../../assets/logo.svg";
 import cal from "../../assets/cal.svg";
 import Premium from "../../assets/Premium.svg";
-import { fetchEvents } from "../../api/Events";
+import { fetchEvents } from "../../lib/api";
 
 moment.locale("ko");
 const localizer = momentLocalizer(moment);
@@ -101,44 +101,6 @@ function CustomEvent({ event }) {
   );
 }
 
-// 실시간 시간 표시
-function CurrentTimeIndicator() {
-  const [topPx, setTopPx] = useState(0);
-
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-
-      const container = document.querySelector(".rbc-time-content");
-      if (container) {
-        const slotHeight = container.offsetHeight / 24; // 24시간 기준
-        const newTop = hour * slotHeight + (minute / 60) * slotHeight;
-        setTopPx(newTop);
-      }
-    };
-
-    update();
-    const interval = setInterval(update, 60000); // 1분마다 갱신
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: topPx,
-        left: 0,
-        right: 0,
-        height: 2,
-        backgroundColor: "red",
-        zIndex: 1000,
-      }}
-    />
-  );
-}
-
 export default function ScheduleWeek() {
   const [date, setDate] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
@@ -189,41 +151,6 @@ export default function ScheduleWeek() {
     }),
     []
   );
-
-  const recalcNowLine = () => {
-    const holder = holderRef.current;
-    if (!holder) return;
-
-    const grid = holder.querySelector(".rbc-time-content");
-    const gutter = holder.querySelector(".rbc-time-gutter");
-    if (!grid || !gutter) return;
-
-    const holderRect = holder.getBoundingClientRect();
-    const gridRect = grid.getBoundingClientRect();
-    const gutterRect = gutter.getBoundingClientRect();
-
-    const firstGroup = grid.querySelector(".rbc-timeslot-group");
-    if (!firstGroup) return;
-
-    const slotHeight = firstGroup.getBoundingClientRect().height;
-    const now = new Date();
-    const y = slotHeight * (now.getHours() + now.getMinutes() / 60);
-
-    const top = y - grid.scrollTop;
-    const left = gutterRect.right - holderRect.left;
-    const width = grid.clientWidth;
-
-    // 화면 안에 있으면 상태 업데이트, 아니면 null 처리
-    if (top < 0 || top > grid.clientHeight) {
-      setNowTop(null);
-      setNowLeft(null);
-      setNowWidth(null);
-    } else {
-      setNowTop(top);
-      setNowLeft(left);
-      setNowWidth(width);
-    }
-  };
 
   const handleRangeChange = async (range) => {
     if (!range) return;
@@ -320,10 +247,9 @@ export default function ScheduleWeek() {
             formats={formats}
             view={isWeekView ? "week" : "month"}
           />
-          {isWeekView && <CurrentTimeIndicator />}
         </div>
 
-        {modalOpen && (
+        {modalOpen && slotForModal && (
           <ScheduleModal
             slot={slotForModal}
             event={selectedEvent}

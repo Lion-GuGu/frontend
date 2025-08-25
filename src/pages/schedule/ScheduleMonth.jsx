@@ -12,7 +12,7 @@ import nameMark from "../../assets/name.svg";
 import logo from "../../assets/logo.svg";
 import cal from "../../assets/cal.svg";
 import Premium from "../../assets/Premium.svg";
-import { fetchEvents, addEventAPI } from "../../api/Events";
+import { fetchEvents, addEventAPI } from "../../lib/api";
 
 moment.locale("ko");
 const localizer = momentLocalizer(moment);
@@ -247,6 +247,7 @@ export default function ScheduleMonth() {
             onSelectSlot={onSelectSlot}
             onSelectEvent={onSelectEvent}
             onRangeChange={handleRangeChange}
+            ㄴ
             style={{ height: "calc(100vh - 84px)" }}
             formats={formats}
             eventPropGetter={eventPropGetter}

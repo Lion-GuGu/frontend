@@ -5,7 +5,7 @@ import {
   addEventAPI,
   updateEventAPI,
   deleteEventAPI,
-} from "../../api/Events";
+} from "../../lib/api";
 
 const EventContext = createContext();
 
@@ -49,6 +49,7 @@ export function EventProvider({ children }) {
       }
     } catch (err) {
       console.error("일정 추가 실패", err);
+      return null;
     }
   };
 
@@ -70,6 +71,7 @@ export function EventProvider({ children }) {
       }
     } catch (err) {
       console.error("일정 수정 실패", err);
+      return null;
     }
   };
 
@@ -82,6 +84,7 @@ export function EventProvider({ children }) {
       }
     } catch (err) {
       console.error("일정 삭제 실패", err);
+      return null;
     }
   };
 

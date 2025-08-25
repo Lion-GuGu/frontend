@@ -30,41 +30,73 @@ const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSave = () => {
-    const startDateTime = new Date(`${startDate}T${startTime}:00`);
-    const endDateTime = new Date(`${startDate}T${endTime}:00`);
+  const handleSave = async () => {
+    try {
+      const startDateTime = new Date(`${startDate}T${startTime}:00`);
+      const endDateTime = new Date(`${startDate}T${endTime}:00`);
 
-    const newEvent = {
-      id: event?.id || Date.now(),
-      title,
-      start: startDateTime,
-      end: endDateTime,
-      category: colorCategory,
-      location,
-      gender,
-      age,
-      description,
-      tags,
-    };
+      // 성별 enum 변환
+      const genderMap = {
+        남성: "MALE",
+        여성: "FEMALE",
+      };
+      const serverGender = genderMap[gender];
+      if (!serverGender) {
+        alert("아이 성별을 선택해주세요.");
+        return;
+      }
 
-    if (event) {
-      onUpdate(newEvent);
-    } else {
-      onAdd(newEvent);
-    }
-    onClose();
-  };
+      // 나이 필수 체크
+      if (!age) {
+        alert("아이 나이를 입력해주세요.");
+        return;
+      }
 
-  const handleDelete = () => {
-    if (event) {
-      onDelete(event.id);
+      // 서버 명세에 맞는 객체 생성
+      const newEvent = {
+        title: title || "제목 없음",
+        category: colorCategory || "기타",
+        dateOnly: startDateTime.toISOString().slice(0, 10), // YYYY-MM-DD
+        startTime: `${startDateTime
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${startDateTime
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`, // HH:mm
+        endTime: `${endDateTime
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${endDateTime
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`, // HH:mm
+        location: location || "",
+        childGender: serverGender, // enum 변환
+        childAge: parseInt(age.replace(/\D/g, "")), // 숫자만 추출
+        description: description || "",
+        tags: tags || [],
+      };
+
+      let savedEvent;
+
+      if (event) {
+        savedEvent = await onUpdate(newEvent, event.id);
+      } else {
+        savedEvent = await onAdd(newEvent);
+      }
+
+      if (savedEvent) {
+        console.log("등록/수정 완료:", savedEvent);
+        savedEvent.start = new Date(savedEvent.start);
+        savedEvent.end = new Date(savedEvent.end);
+      }
+
       onClose();
+    } catch (error) {
+      console.error("일정 저장 실패:", error);
+      alert("일정 저장 중 오류가 발생했습니다.");
     }
-  };
-
-  const onAddEvent = async (newEvent) => {
-    const savedEvent = await addEventAPI(newEvent);
-    if (savedEvent) addEvent(savedEvent);
   };
 
   return (

@@ -216,7 +216,7 @@
 .patient select {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
-  padding: 10px;
+  padding: 5px;
   border-radius: 5.5px;
   flex-grow: 1;
   -webkit-appearance: none;
@@ -241,7 +241,7 @@
   font-size: 14px;
   border: 1px solid #ddd;
   margin-left: 13px;
-  max-height: 68px;
+  max-height: 90px;
 }
 
 .textEditorToolbar {
@@ -269,7 +269,7 @@
 .descriptionInput {
   width: 100%;
   max-width: 485px;
-  height: 80px;
+  height: 90px;
   border: none;
   background: none;
   resize: none;
@@ -290,7 +290,7 @@
 }
 
 .tagInput {
-  width: 455px;
+  width: 470px;
   max-width: 485px;
   flex-shrink: 0;
   border: 1px solid #ddd;

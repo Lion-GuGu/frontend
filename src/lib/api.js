@@ -1,8 +1,8 @@
 // src/lib/api.js
 import axios from "axios";
 
-export const AUTH_KEY = "access_token";      // 액세스 토큰 저장 키
-export const AUTH_UID_KEY = "auth_uid";      // 로그인 시 받은 사용자 id 저장 키(옵션)
+export const AUTH_KEY = "access_token"; // 액세스 토큰 저장 키
+export const AUTH_UID_KEY = "auth_uid"; // 로그인 시 받은 사용자 id 저장 키(옵션)
 
 const api = axios.create({
   baseURL: "http://15.164.169.237:8080",
@@ -79,6 +79,15 @@ api.interceptors.response.use(
   }
 );
 
+// ================= 이벤트 API =================
+const categoryColors = {
+  긴급: "#f28b82",
+  돌봄: "#f6bf26",
+  교육: "#33b679",
+  기타: "#8ab4f8",
+  내일정: "#ED8611",
+};
+
 /* ============================
  * 유틸 & 헬퍼 API
  * ============================ */
@@ -108,7 +117,8 @@ export async function fetchMe() {
   // 1) JWT에서 id 꺼내기
   const t = getToken();
   const payload = t ? parseJwt(t) : null;
-  const uidFromJwt = payload?.id ?? payload?.userId ?? payload?.uid ?? payload?.sub;
+  const uidFromJwt =
+    payload?.id ?? payload?.userId ?? payload?.uid ?? payload?.sub;
 
   // 2) 로그인 시 저장해둔 uid(선택) 사용
   const uidStored = getAuthUserId();
@@ -137,5 +147,66 @@ export async function fetchUserById(id) {
   }
   throw new Error(`User not found for id=${id}`);
 }
+
+export const fetchEvents = async (start, end) => {
+  try {
+    const res = await api.get("/api/requests/events", {
+      params: {
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+      },
+    });
+    return res.data.map((e) => ({
+      ...e,
+      color: categoryColors[e.category] || "#8ab4f8",
+    }));
+  } catch (err) {
+    console.error("일정 불러오기 실패", err);
+    return [];
+  }
+};
+
+export const addEventAPI = async (event) => {
+  try {
+    const res = await api.post("/api/requests", event);
+    console.log("일정 등록 성공", res.data);
+    return {
+      ...res.data,
+      color: categoryColors[res.data.category] || "#8ab4f8",
+    };
+  } catch (err) {
+    if (err.response) {
+      console.error("서버 오류", err.response.status, err.response.data);
+    } else if (err.request) {
+      console.error("서버 응답 없음", err.request);
+    } else {
+      console.error("Axios 오류", err.message);
+    }
+    return null;
+  }
+};
+
+export const updateEventAPI = async (event) => {
+  try {
+    const res = await api.put(`/api/requests/events/${event.id}`, event);
+    return {
+      ...res.data,
+      color: categoryColors[res.data.category] || "#8ab4f8",
+    };
+  } catch (err) {
+    console.error("일정 수정 실패", err);
+    return null;
+  }
+};
+
+export const deleteEventAPI = async (id) => {
+  try {
+    const res = await api.delete(`/api/requests/events/${id}`);
+    return res.data;
+  } catch (err) {
+    console.error("일정 삭제 실패", err);
+    return null;
+  }
+};
 
 export default api;
