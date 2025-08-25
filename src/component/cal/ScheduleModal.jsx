@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import styles from "./scheduleModal.module.css";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import "react-datepicker/dist/react-datepicker.css";
+// import "react-datepicker/dist/react-datepicker.css";
+import "./scheduleModal.module.css";
 import DatePicker from "react-datepicker";
 
 const ScheduleModal = ({ slot, event, onClose, onAdd, onUpdate, onDelete }) => {
