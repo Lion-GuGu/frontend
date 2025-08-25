@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react"; // useRef, useEffect 추가
 import moment from "moment";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -6,6 +6,24 @@ import styles from "./schedule.module.css";
 import ScheduleModal from "../../component/cal/ScheduleModal";
 
 const localizer = momentLocalizer(moment);
+
+/* =====  A. 시스템 스크롤바 숨김 + RBC 헤더 우측 여백 제거(상자 방지)   ===== */
+const OVERLAY_SCROLLBAR_CSS = `
+  /* 본문 스크롤 컨테이너의 네이티브 스크롤바 숨김 */
+  .${styles.calendarHolder} .rbc-time-content {
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* IE/Edge Legacy */
+  }
+  .${styles.calendarHolder} .rbc-time-content::-webkit-scrollbar { /* Chromium/WebKit */
+    width: 0px; height: 0px;
+  }
+
+  /* RBC가 스크롤바 폭만큼 헤더 오른쪽에 margin-right를 넣어 '상자'가 생기는 것 제거 */
+  .${styles.calendarHolder} .rbc-time-header.rbc-overflowing .rbc-time-header-content {
+    margin-right: 0 !important;
+    overflow: hidden;
+  }
+`;
 
 // 주간 범위 문자열 포맷
 function formatWeekRange(date) {
@@ -83,40 +101,258 @@ export default function Schedule() {
   const [slotForModal, setSlotForModal] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // 일정 추가
+  const isThisWeek = useMemo(() => moment(date).isSame(moment(), "week"), [date]);
+
+  const holderRef = useRef(null);
+  const [nowTop, setNowTop] = useState(null);
+  const [nowLeft, setNowLeft] = useState(null);
+  const [nowWidth, setNowWidth] = useState(null);
+
+  // ===== B. 커스텀 오버레이 스크롤바 상태 =====
+  const [ovTop, setOvTop] = useState(0);
+  const [ovHeight, setOvHeight] = useState(0);
+  const [thumbTop, setThumbTop] = useState(0);
+  const [thumbH, setThumbH] = useState(32);
+  const [sbVisible, setSbVisible] = useState(false);
+  const hideTimerRef = useRef(null);
+  const draggingRef = useRef(false);
+  const dragStateRef = useRef({ startY: 0, startThumbTop: 0, maxThumbTop: 0, maxScroll: 0 });
+
+  useEffect(() => {
+    // no-op
+  }, []);
+
+  const measureOverlay = () => {
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    if (!holder || !grid) return;
+    const hr = holder.getBoundingClientRect();
+    const gr = grid.getBoundingClientRect();
+    setOvTop(gr.top - hr.top);
+    setOvHeight(gr.height);
+  };
+
+  const updateThumb = () => {
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    if (!grid) return;
+    const client = grid.clientHeight;
+    const scrollH = grid.scrollHeight;
+    if (scrollH <= client + 1) {
+      setSbVisible(false);
+      setThumbTop(0);
+      return;
+    }
+    const ratio = client / scrollH;
+    const tH = Math.max(24, Math.round(ovHeight * ratio));
+    const maxThumbTop = Math.max(1, ovHeight - tH);
+    const top = Math.round((grid.scrollTop / (scrollH - client)) * maxThumbTop);
+    setThumbH(tH);
+    setThumbTop(top);
+  };
+
+  const pingShow = (ms = 900) => {
+    setSbVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setSbVisible(false), ms);
+  };
+
+  const onThumbMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    if (!grid) return;
+    draggingRef.current = true;
+    const client = grid.clientHeight;
+    const scrollH = grid.scrollHeight;
+    const maxScroll = Math.max(1, scrollH - client);
+    const maxThumbTop = Math.max(1, ovHeight - thumbH);
+    dragStateRef.current = {
+      startY: e.clientY,
+      startThumbTop: thumbTop,
+      maxThumbTop,
+      maxScroll,
+    };
+    document.addEventListener("mousemove", onDocMouseMove);
+    document.addEventListener("mouseup", onDocMouseUp);
+  };
+
+  const onDocMouseMove = (e) => {
+    if (!draggingRef.current) return;
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    if (!grid) return;
+    const { startY, startThumbTop, maxThumbTop, maxScroll } = dragStateRef.current;
+    const dy = e.clientY - startY;
+    const nextThumb = Math.min(Math.max(0, startThumbTop + dy), maxThumbTop);
+    setThumbTop(nextThumb);
+    const pct = nextThumb / maxThumbTop;
+    grid.scrollTop = pct * maxScroll;
+    pingShow(1200);
+  };
+
+  const onDocMouseUp = () => {
+    draggingRef.current = false;
+    document.removeEventListener("mousemove", onDocMouseMove);
+    document.removeEventListener("mouseup", onDocMouseUp);
+  };
+
+  useEffect(() => {
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    if (!grid) return;
+
+    const onScroll = () => {
+      updateThumb();
+      pingShow(900);
+    };
+    const onEnter = () => pingShow(600);
+    const onMove = () => pingShow(600);
+    const onLeave = () => setSbVisible(false);
+
+    measureOverlay();
+    updateThumb();
+
+    grid.addEventListener("scroll", onScroll);
+    grid.addEventListener("mouseenter", onEnter);
+    grid.addEventListener("mousemove", onMove);
+    grid.addEventListener("mouseleave", onLeave);
+    const onResize = () => {
+      measureOverlay();
+      updateThumb();
+    };
+    window.addEventListener("resize", onResize);
+
+    const ro = new ResizeObserver(() => {
+      measureOverlay();
+      updateThumb();
+    });
+    ro.observe(grid);
+
+    return () => {
+      clearTimeout(hideTimerRef.current);
+      grid.removeEventListener("scroll", onScroll);
+      grid.removeEventListener("mouseenter", onEnter);
+      grid.removeEventListener("mousemove", onMove);
+      grid.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("resize", onResize);
+      ro.disconnect();
+    };
+  }, [date, ovHeight]);
+
+  const recalcNowLine = () => {
+    const holder = holderRef.current;
+    if (!holder) return;
+
+    const grid = holder.querySelector(".rbc-time-content");
+    const gutter = holder.querySelector(".rbc-time-gutter");
+    if (!grid || !gutter) return;
+
+    const holderRect = holder.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    const gutterRect = gutter.getBoundingClientRect();
+
+    const indicator =
+      grid.querySelector(".rbc-current-time-indicator") ||
+      holder.querySelector(".rbc-current-time-indicator");
+
+    if (indicator) {
+      const style = window.getComputedStyle(indicator);
+      const topInGrid = parseFloat(style.top) || 0;
+      const top = (gridRect.top - holderRect.top) + (topInGrid - grid.scrollTop);
+      const left = gutterRect.right - holderRect.left;
+      const width = grid.clientWidth;
+
+      const gridTop = gridRect.top - holderRect.top;
+      const gridBottom = gridRect.bottom - holderRect.top;
+      if (top < gridTop || top > gridBottom) {
+        setNowTop(null);
+        setNowLeft(null);
+        setNowWidth(null);
+      } else {
+        setNowTop(top);
+        setNowLeft(left);
+        setNowWidth(width);
+      }
+      return;
+    }
+
+    // Fallback calculation
+    const firstGroup =
+      gutter.querySelector(".rbc-timeslot-group") ||
+      grid.querySelector(".rbc-timeslot-group");
+    if (!firstGroup) return;
+
+    const hourHeight = firstGroup.getBoundingClientRect().height;
+    const now = new Date();
+    const y = hourHeight * (now.getHours() + now.getMinutes() / 60);
+    const top = (gridRect.top - holderRect.top) + y - grid.scrollTop;
+    const left = gutterRect.right - holderRect.left;
+    const width = grid.clientWidth;
+
+    const gridTop = gridRect.top - holderRect.top;
+    const gridBottom = gridRect.bottom - holderRect.top;
+    if (top < gridTop || top > gridBottom) {
+      setNowTop(null);
+      setNowLeft(null);
+      setNowWidth(null);
+    } else {
+      setNowTop(top);
+      setNowLeft(left);
+      setNowWidth(width);
+    }
+  };
+
+  useEffect(() => {
+    recalcNowLine();
+
+    const holder = holderRef.current;
+    const grid = holder?.querySelector(".rbc-time-content");
+    const onScroll = () => recalcNowLine();
+
+    grid?.addEventListener("scroll", onScroll);
+    window.addEventListener("resize", recalcNowLine);
+
+    const timer = setInterval(recalcNowLine, 30000);
+    const lateTick = setTimeout(recalcNowLine, 300);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(lateTick);
+      window.removeEventListener("resize", recalcNowLine);
+      grid?.removeEventListener("scroll", onScroll);
+    };
+  }, [date]);
+
   const onSelectSlot = (slot) => {
     setSlotForModal({ start: slot.start, end: slot.end });
     setSelectedEvent(null);
     setModalOpen(true);
   };
 
-  // 일정 클릭 → 수정/삭제 모달
   const onSelectEvent = (event) => {
     setSelectedEvent(event);
     setSlotForModal({ start: event.start, end: event.end });
     setModalOpen(true);
   };
 
-  // 새 일정 추가
   const onAddEvent = (form) => {
     const saved = { ...form, id: Date.now() };
     setEvents((prev) => [...prev, saved]);
     setModalOpen(false);
   };
 
-  // 일정 수정
   const onUpdateEvent = (form) => {
     setEvents((prev) => prev.map((e) => (e.id === form.id ? form : e)));
     setModalOpen(false);
   };
 
-  // 일정 삭제
   const onDeleteEvent = (id) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
     setModalOpen(false);
   };
 
-  // 이벤트 스타일
   const eventPropGetter = (event) => {
     const color = event.color || "#8ab4f8";
     return {
@@ -148,12 +384,15 @@ export default function Schedule() {
 
   return (
     <div className={styles.pageWrap}>
+      <style>{OVERLAY_SCROLLBAR_CSS}</style>
+
       <aside className={styles.sidebar}>
         <div className={styles.box}>
           <img className={styles.logo} src="logo.svg" alt="로고" />
           <img className={styles.font} src="font.svg" alt="품아이" />
         </div>
         <MiniMonth value={date} onChange={setDate} />
+
         <div className={styles.calendarList}>
           <div className={styles.box}>
             <img className={styles.cal} src="cal.svg" alt="" />
@@ -176,6 +415,7 @@ export default function Schedule() {
             기타
           </label>
         </div>
+
         <div className={styles.calendarList}>
           <div className={styles.box}>
             <img className={styles.cal} src="cal.svg" alt="" />
@@ -204,7 +444,13 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className={styles.calendarHolder}>
+        <div className={styles.calendarHolder} ref={holderRef}>
+          {isThisWeek && nowTop != null && nowLeft != null && (
+            <div className={styles.nowLine} style={{ top: nowTop, left: nowLeft, width: nowWidth }}>
+              <span className={styles.nowDot} />
+            </div>
+          )}
+
           <Calendar
             localizer={localizer}
             date={date}
@@ -223,6 +469,36 @@ export default function Schedule() {
             eventPropGetter={eventPropGetter}
             formats={formats}
           />
+
+          <div
+            style={{
+              position: "absolute",
+              right: 4,
+              top: ovTop,
+              height: ovHeight,
+              width: 10,
+              opacity: sbVisible ? 1 : 0,
+              transition: "opacity .18s linear",
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              onMouseDown={onThumbMouseDown}
+              style={{
+                position: "absolute",
+                right: 0,
+                top: thumbTop,
+                width: 8,
+                height: thumbH,
+                borderRadius: 9999,
+                background: "rgba(0,0,0,.28)",
+                boxShadow: "0 0 1px rgba(0,0,0,.3)",
+                pointerEvents: "auto",
+                cursor: "grab",
+              }}
+              onMouseEnter={() => setSbVisible(true)}
+            />
+          </div>
         </div>
       </main>
 
